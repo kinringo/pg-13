@@ -11,6 +11,7 @@ struct AuthGateView: View {
     @State private var isSignUp = false
     @State private var isWorking = false
     @State private var errorMessage = ""
+    @State private var noticeMessage = ""
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -36,11 +37,17 @@ struct AuthGateView: View {
                 Text(errorMessage)
                     .font(QM.mono(10)).foregroundColor(QM.accentRed).lineSpacing(2)
             }
+            // A sign-up that needs email confirmation succeeded. Showing it in
+            // red alongside real failures is what made it read as a bug.
+            if !noticeMessage.isEmpty {
+                Text(noticeMessage)
+                    .font(QM.mono(10)).foregroundColor(QM.accentCyan).lineSpacing(2)
+            }
 
             QMButton(label: isSignUp ? "Create Account" : "Sign In",
                      style: .primary, height: 30, isLoading: isWorking, flexible: true) { submit() }
 
-            Button(action: { isSignUp.toggle(); errorMessage = "" }) {
+            Button(action: { isSignUp.toggle(); errorMessage = ""; noticeMessage = "" }) {
                 Text(isSignUp ? "Have an account? Sign in" : "New here? Create an account")
                     .font(QM.mono(10)).foregroundColor(QM.textSecondary).underline()
             }
@@ -60,11 +67,17 @@ struct AuthGateView: View {
         guard SupabaseConfig.isConfigured else {
             errorMessage = "Sync backend not configured yet."; return
         }
-        isWorking = true; errorMessage = ""
+        isWorking = true; errorMessage = ""; noticeMessage = ""
         Task { @MainActor in
             do {
                 if isSignUp { try await AuthService.shared.signUp(email: e, password: password) }
                 else        { try await AuthService.shared.signIn(email: e, password: password) }
+            } catch ServiceError.emailConfirmationRequired {
+                // Drop the form back to Sign In so the next tap is the one
+                // that will actually work once the link is clicked.
+                noticeMessage = ServiceError.emailConfirmationRequired.localizedDescription
+                isSignUp = false
+                password = ""
             } catch {
                 errorMessage = error.localizedDescription
             }

@@ -110,6 +110,13 @@ class AuthService: ObservableObject {
     }
 
     private func authRequest(path: String, body: [String: String]) async throws -> TokenResponse {
+        let data = try await authRequestData(path: path, body: body)
+        return try JSONDecoder().decode(TokenResponse.self, from: data)
+    }
+
+    /// The raw call. Sign-up needs the body before it is decoded, because a
+    /// successful sign-up does not always carry tokens.
+    private func authRequestData(path: String, body: [String: String]) async throws -> Data {
         guard SupabaseConfig.isConfigured else { throw ServiceError.notConfigured }
         var req = URLRequest(url: URL(string: "\(SupabaseConfig.url)/auth/v1/\(path)")!)
         req.httpMethod = "POST"
@@ -123,7 +130,7 @@ class AuthService: ObservableObject {
             throw ServiceError.httpError(http.statusCode,
                 e?.msg ?? e?.error_description ?? e?.message ?? "Authentication failed")
         }
-        return try JSONDecoder().decode(TokenResponse.self, from: data)
+        return data
     }
 
     private func makeSession(_ t: TokenResponse, fallbackEmail: String) -> AuthSession {
@@ -141,8 +148,17 @@ class AuthService: ObservableObject {
     }
 
     func signUp(email: String, password: String) async throws {
-        _ = try await authRequest(path: "signup", body: ["email": email, "password": password])
-        try await signIn(email: email, password: password)
+        let data = try await authRequestData(path: "signup",
+                                             body: ["email": email, "password": password])
+        // With email confirmation enabled (the default on a new Supabase
+        // project) /signup returns 200 with a user object and no tokens. That
+        // is a successful sign-up, not a failure, but there is no session to
+        // keep and signing in now would fail with "Invalid login credentials".
+        guard let t = try? JSONDecoder().decode(TokenResponse.self, from: data) else {
+            throw ServiceError.emailConfirmationRequired
+        }
+        persist(makeSession(t, fallbackEmail: email))
+        await CloudHistoryStore.shared.migrateLocalIfNeeded()
     }
 
     func signOut() { persist(nil) }

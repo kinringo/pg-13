@@ -68,6 +68,7 @@ enum ServiceError: LocalizedError {
     case notSignedIn
     case emptyResponse
     case exportFailed(String)
+    case emailConfirmationRequired
 
     var errorDescription: String? {
         switch self {
@@ -78,6 +79,8 @@ enum ServiceError: LocalizedError {
         case .notSignedIn:                 return "Sign in (History tab) to save and sync."
         case .emptyResponse:               return "Claude returned nothing. Try rewording the goal."
         case .exportFailed(let why):       return "Export failed. \(why)"
+        case .emailConfirmationRequired:
+            return "Account created. Click the link in the confirmation email, then sign in."
         }
     }
 }
