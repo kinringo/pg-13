@@ -26,7 +26,7 @@ Design-and-Code/PG-13/
     PlatformFields.swift       QMTextField / QMTextArea wrappers
     KeychainHelper.swift       Keychain read/write + UserDefaults migration
     Models.swift               PromptRecord and friends
-    Markdown.swift             markdown document builder + MarkdownExporter
+    Markdown.swift             document builder, linter, MarkdownExporter, MarkdownDocViewModel, MarkdownPreview, DocsView
     GenerateView.swift
     HistoryViews.swift
     FolderViews.swift
@@ -38,8 +38,9 @@ Design-and-Code/PG-13/
 ## Architecture
 
 - **AppDelegate** (macOS only): `NSStatusBar` icon, creates the `NSPanel`, conforms to `NSWindowDelegate`.
-- **AppState**: singleton `ObservableObject`. Holds `activeTab`, `lightMode`, and the view models. Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
+- **AppState**: singleton `ObservableObject`. Holds `activeTab` (0 Generate, 1 Docs, 2 History, 3 Folders), `lightMode`, and the view models. Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
 - **GenerateViewModel**: role, goal, extra info, tone and output-type selection, generate and refine, copy/share/save/edit state.
+- **MarkdownDocViewModel**: the Docs tab. Doc type, title, subject, audience, required sections, depth. Depth sets both the length rule in the system prompt and `maxTokens` (1200 / 2500 / 4000), so the two cannot drift apart. The draft autosaves to `UserDefaults` on an 800ms debounce, because the macOS panel dismisses whenever focus leaves it.
 - **HistoryViewModel**: saved prompts, expand/collapse, folder assignment.
 - **Folder views**: folder list plus drill-in.
 

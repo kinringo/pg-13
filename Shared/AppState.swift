@@ -26,6 +26,9 @@ class AppState: ObservableObject {
     static let shared = AppState()
     @Published var activeTab: Int = 0
     let generateVM = GenerateViewModel()
+    /// Docs owns a persisted draft, so it lives as long as the app rather than
+    /// being rebuilt each time the tab is shown.
+    let docVM = MarkdownDocViewModel()
 
     private init() {
         KeychainHelper.migrateFromUserDefaults(

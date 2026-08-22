@@ -21,8 +21,16 @@ Built with SwiftUI. One shared codebase, two targets, no third-party dependencie
   constraint about tone") and the prompt is revised in place, versioned.
 - **Save and organise.** Prompts sync to your own Supabase row via email
   sign-in. File them into folders.
-- **Export markdown.** Any single prompt, an entire folder, or your whole
-  library, as a formatted `.md` document with metadata and a table of contents.
+- **Docs.** A separate tab for writing whole markdown documents (README, spec,
+  runbook, how-to, brief, meeting notes, case study, changelog) from a short
+  brief: subject, audience, required sections, depth. Edit the source, flip to
+  a rendered preview, revise in plain language, export.
+- **Lint the result.** The Docs tab checks the document before it ships: em and
+  en dashes, unclosed code fences, missing or duplicated H1, skipped heading
+  levels, and leftover placeholders. Dashes have a one-click fix. Word count,
+  heading count, reading time, and an outline sit above the editor.
+- **Export markdown.** Any single prompt, an entire folder, your whole
+  library, or a Docs document, as a formatted `.md` file.
 - **Light and dark.** Both themes ship, toggled from the header.
 
 ## Layout
@@ -31,7 +39,7 @@ Built with SwiftUI. One shared codebase, two targets, no third-party dependencie
 Shared/              cross-platform: models, services, view models, all views
   AppState.swift       view models, prompt construction
   Services.swift       Claude API, Supabase auth, cloud + local history stores
-  Markdown.swift       markdown document builder and export controller
+  Markdown.swift       document builder, linter, export controller, Docs tab
   DesignSystem.swift   QM design tokens, buttons, flow layout
   GenerateView.swift   the generate tab
   HistoryViews.swift   auth gate, history list, per-row actions

@@ -49,6 +49,16 @@ struct iOSContentView: View {
             .tag(0)
 
             NavigationStack {
+                DocsView(vm: appState.docVM)
+                    .navigationTitle("Docs")
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbarBackground(QM.bgElevated, for: .navigationBar)
+                    .toolbarBackground(.visible, for: .navigationBar)
+            }
+            .tabItem { Label("Docs", systemImage: "doc.text") }
+            .tag(1)
+
+            NavigationStack {
                 HistoryView()
                     .navigationTitle("History")
                     .navigationBarTitleDisplayMode(.inline)
@@ -56,7 +66,7 @@ struct iOSContentView: View {
                     .toolbarBackground(.visible, for: .navigationBar)
             }
             .tabItem { Label("History", systemImage: "clock") }
-            .tag(1)
+            .tag(2)
 
             NavigationStack {
                 FoldersView()
@@ -66,7 +76,7 @@ struct iOSContentView: View {
                     .toolbarBackground(.visible, for: .navigationBar)
             }
             .tabItem { Label("Folders", systemImage: "folder") }
-            .tag(2)
+            .tag(3)
         }
         .tint(QM.accentCyan)
         .preferredColorScheme(appState.lightMode ? .light : .dark)

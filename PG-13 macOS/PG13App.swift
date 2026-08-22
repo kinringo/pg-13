@@ -21,7 +21,7 @@ struct ContentView: View {
                 Rectangle().fill(QM.border).frame(width: 1, height: 10)
                     .padding(.horizontal, 10)
 
-                ForEach(Array(["Generate", "History", "Folders"].enumerated()), id: \.offset) { idx, name in
+                ForEach(Array(["Generate", "Docs", "History", "Folders"].enumerated()), id: \.offset) { idx, name in
                     Button(action: { appState.activeTab = idx }) {
                         VStack(spacing: 0) {
                             Text(name.uppercased())
@@ -61,6 +61,8 @@ struct ContentView: View {
                     if appState.activeTab == 0 {
                         GenerateView(vm: appState.generateVM)
                     } else if appState.activeTab == 1 {
+                        DocsView(vm: appState.docVM)
+                    } else if appState.activeTab == 2 {
                         HistoryView()
                     } else {
                         FoldersView()
