@@ -58,9 +58,12 @@ class ClaudeService {
 // MARK: - Supabase configuration
 
 enum SupabaseConfig {
-    /// Paste values from Supabase → Project Settings → API after creating the project.
-    static let url = "https://lgbkozbwnilhsuvfpxnd.supabase.co"
-    static let anonKey = "sb_publishable_k1Qj1qe5FoDmrH5LHVogdw_BVR8lknM"
+    /// From Supabase → Project Settings → API. The publishable key is meant to
+    /// ship in the client: it grants nothing on its own. Every row is gated by
+    /// row-level security on `auth.uid()`, and requests carry a per-user JWT.
+    /// See the README for the table and policy this depends on.
+    static let url = "https://kxkpewnebbftderbizph.supabase.co"
+    static let anonKey = "sb_publishable_SVoScLJoPc7fzGSdfyh3Iw_0KolcA_7"
     static var isConfigured: Bool { !url.isEmpty && !anonKey.isEmpty }
 }
 
