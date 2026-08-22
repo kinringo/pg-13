@@ -145,4 +145,8 @@ both themes come from one definition.
 
 ## Licence
 
-Personal project. All rights reserved.
+Personal project, published to be read rather than reused. All rights reserved
+on the source.
+
+The bundled IBM Plex font files are not mine. IBM Plex is licensed by IBM under
+the SIL Open Font License 1.1: https://github.com/IBM/plex
