@@ -134,8 +134,9 @@ both themes come from one definition.
 - The five bundled IBM Plex font files are not currently loaded. Type falls back
   to the system monospace face.
 - History loads the 50 most recent prompts, with no pagination past that.
-- Sign-up assumes email confirmation is disabled on the Supabase project. With
-  confirmation on, the immediate sign-in after sign-up will fail.
+- Sign-up works with email confirmation either on or off. With it on (the
+  default for a new project) the app tells you to click the link and sign in,
+  rather than trying to sign you in on the spot.
 - Docs holds one draft at a time, saved locally, not synced. The
   `prompt_history` table is shaped for prompts, and filing documents in it
   would mean abusing that schema. Export the document, or copy it out.
