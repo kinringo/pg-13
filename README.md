@@ -40,7 +40,7 @@ Shared/              cross-platform: models, services, view models, all views
   KeychainHelper.swift Keychain read/write
   Models.swift         PromptRecord, ServiceError, Anthropic request/response
 
-PromptGenerator/     macOS target: menu bar item, floating NSPanel, ContentView
+PG-13 macOS/         macOS target: menu bar item, floating NSPanel, ContentView
 PG-13 iOS/           iOS target: tab-bar shell
 ```
 
@@ -49,10 +49,10 @@ PG-13 iOS/           iOS target: tab-bar shell
 Requires Xcode 15 or later.
 
 ```bash
-open PromptGenerator.xcodeproj
+open PG-13.xcodeproj
 ```
 
-Pick the `PromptGenerator` scheme for macOS or `PG-13 iOS` for the phone, then
+Pick the `PG-13` scheme for macOS or `PG-13 iOS` for the phone, then
 build and run.
 
 ### Anthropic API key
@@ -98,8 +98,17 @@ create table prompt_history (
 
 alter table prompt_history enable row level security;
 
-create policy "own rows" on prompt_history
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows select" on prompt_history
+  for select using (auth.uid() = user_id);
+create policy "own rows insert" on prompt_history
+  for insert with check (auth.uid() = user_id);
+create policy "own rows update" on prompt_history
+  for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
+create policy "own rows delete" on prompt_history
+  for delete using (auth.uid() = user_id);
+
+create index prompt_history_user_created_idx on prompt_history (user_id, created_at desc);
+create index prompt_history_user_folder_idx  on prompt_history (user_id, folder);
 ```
 
 RLS is not optional here. Without that policy the publishable key would expose

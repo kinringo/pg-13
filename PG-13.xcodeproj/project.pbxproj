@@ -45,22 +45,22 @@
 		/* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		ABCFED522FA6E84000C42769 /* Exceptions for "PromptGenerator" folder in "PromptGenerator" target */ = {
+		ABCFED522FA6E84000C42769 /* Exceptions for "PG-13" folder in "PG-13" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = ABCFED3F2FA6E4AE00C42769 /* PromptGenerator */;
+			target = ABCFED3F2FA6E4AE00C42769 /* PG-13 */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		ABCFED422FA6E4AE00C42769 /* PromptGenerator */ = {
+		ABCFED422FA6E4AE00C42769 /* PG-13 */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				ABCFED522FA6E84000C42769 /* Exceptions for "PromptGenerator" folder in "PromptGenerator" target */,
+				ABCFED522FA6E84000C42769 /* Exceptions for "PG-13" folder in "PG-13" target */,
 			);
-			path = PromptGenerator;
+			path = "PG-13 macOS";
 			sourceTree = "<group>";
 		};
 		ABD9F33A2FA731B60032D50D /* PG-13 iOS */ = {
@@ -92,7 +92,7 @@
 			isa = PBXGroup;
 			children = (
 				ABD9F34C2FA732010032D50D /* Shared */,
-				ABCFED422FA6E4AE00C42769 /* PromptGenerator */,
+				ABCFED422FA6E4AE00C42769 /* PG-13 */,
 				ABD9F33A2FA731B60032D50D /* PG-13 iOS */,
 				ABCFED412FA6E4AE00C42769 /* Products */,
 			);
@@ -127,9 +127,9 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		ABCFED3F2FA6E4AE00C42769 /* PromptGenerator */ = {
+		ABCFED3F2FA6E4AE00C42769 /* PG-13 */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = ABCFED4B2FA6E4B100C42769 /* Build configuration list for PBXNativeTarget "PromptGenerator" */;
+			buildConfigurationList = ABCFED4B2FA6E4B100C42769 /* Build configuration list for PBXNativeTarget "PG-13" */;
 			buildPhases = (
 				ABCFED3C2FA6E4AE00C42769 /* Sources */,
 				ABCFED3D2FA6E4AE00C42769 /* Frameworks */,
@@ -140,12 +140,12 @@
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				ABCFED422FA6E4AE00C42769 /* PromptGenerator */,
+				ABCFED422FA6E4AE00C42769 /* PG-13 */,
 			);
-			name = PromptGenerator;
+			name = "PG-13";
 			packageProductDependencies = (
 			);
-			productName = PromptGenerator;
+			productName = "PG-13";
 			productReference = ABCFED402FA6E4AE00C42769 /* PG-13.app */;
 			productType = "com.apple.product-type.application";
 		};
@@ -190,7 +190,7 @@
 					};
 				};
 			};
-			buildConfigurationList = ABCFED3B2FA6E4AE00C42769 /* Build configuration list for PBXProject "PromptGenerator" */;
+			buildConfigurationList = ABCFED3B2FA6E4AE00C42769 /* Build configuration list for PBXProject "PG-13" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -204,7 +204,7 @@
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				ABCFED3F2FA6E4AE00C42769 /* PromptGenerator */,
+				ABCFED3F2FA6E4AE00C42769 /* PG-13 */,
 				ABD9F3382FA731B60032D50D /* PG-13 iOS */,
 			);
 		};
@@ -405,7 +405,7 @@
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PromptGenerator/Info.plist;
+				INFOPLIST_FILE = "PG-13 macOS/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_LSUIElement = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -432,7 +432,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "PromptGenerator/PromptGenerator-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "PG-13 macOS/PG-13-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
@@ -465,7 +465,7 @@
 				ENABLE_RESOURCE_ACCESS_USB = NO;
 				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = PromptGenerator/Info.plist;
+				INFOPLIST_FILE = "PG-13 macOS/Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
 				INFOPLIST_KEY_LSUIElement = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
@@ -492,7 +492,7 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "PromptGenerator/PromptGenerator-Bridging-Header.h";
+				SWIFT_OBJC_BRIDGING_HEADER = "PG-13 macOS/PG-13-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
@@ -572,7 +572,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		ABCFED3B2FA6E4AE00C42769 /* Build configuration list for PBXProject "PromptGenerator" */ = {
+		ABCFED3B2FA6E4AE00C42769 /* Build configuration list for PBXProject "PG-13" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				ABCFED492FA6E4B100C42769 /* Debug */,
@@ -581,7 +581,7 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		ABCFED4B2FA6E4B100C42769 /* Build configuration list for PBXNativeTarget "PromptGenerator" */ = {
+		ABCFED4B2FA6E4B100C42769 /* Build configuration list for PBXNativeTarget "PG-13" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				ABCFED4C2FA6E4B100C42769 /* Debug */,

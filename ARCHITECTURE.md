@@ -11,14 +11,14 @@ A prompt generator built on the Claude API, with prompts saved to Supabase. Two 
 - **macOS**: a menu bar app. Sparkles icon in the status bar, floating NSPanel, non-activating.
 - **iOS**: `PG-13 iOS/PG13iOSApp.swift`, added since the last version of this doc. A stale duplicate at `PG13iOS/` was never in the target and was archived on 2026-08-21.
 
-The panel is *not* always-on-top. `PromptGenerator.swift` line 125 sets `panel.level = .normal`, so it behaves like a normal window in the stacking order.
+The panel is *not* always-on-top. `PG13App.swift` line 125 sets `panel.level = .normal`, so it behaves like a normal window in the stacking order.
 
 ## File layout
 
 One tree. The two legacy trees (`/Users/mariaelena/prompt widget/`, `/Users/mariaelena/PromptGenerator/`) were confirmed gone from disk on 2026-07-12, and the old copy-before-build workflow is obsolete.
 
 ```
-Design-and-Code/PromptGenerator/
+Design-and-Code/PG-13/
   Shared/                      ← cross-platform, both targets
     AppState.swift             AppState + GenerateViewModel + HistoryViewModel
     Services.swift             ClaudeService, SupabaseConfig, AuthService, CloudHistoryStore, HistoryStore
@@ -30,8 +30,8 @@ Design-and-Code/PromptGenerator/
     GenerateView.swift
     HistoryViews.swift
     FolderViews.swift
-  PromptGenerator/
-    PromptGenerator.swift      macOS AppDelegate, NSPanel, stoplight buttons
+  PG-13 macOS/
+    PG13App.swift              macOS AppDelegate, NSPanel, stoplight buttons
   PG-13 iOS/PG13iOSApp.swift   iOS entry point
 ```
 
@@ -110,7 +110,7 @@ Personal install, built in Xcode: Product, Archive, Distribute App, Copy App, Ex
 
 - `import Combine` is required. This toolchain does not re-export `@Published` and `ObservableObject` through SwiftUI.
 - `.nonactivatingPanel` means the window never becomes key, which is why `QMTextArea` overrides `mouseDown`.
-- `PRODUCT_NAME` was `$(TARGET_NAME)` and is overridden to `"PG-13"` in both Debug and Release configs in `project.pbxproj`. The Xcode scheme dropdown still reads "PromptGenerator", which is internal only.
+- `PRODUCT_NAME` was `$(TARGET_NAME)` and is overridden to `"PG-13"` in both Debug and Release configs in `project.pbxproj`. The target, scheme, project file and source folder were all renamed to PG-13 on 2026-08-22. Only `PRODUCT_BUNDLE_IDENTIFIER` still says promptgenerator, left alone deliberately so the Keychain items stay reachable.
 
 ## Open risks
 
