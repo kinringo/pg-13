@@ -136,6 +136,11 @@ both themes come from one definition.
 - History loads the 50 most recent prompts, with no pagination past that.
 - Sign-up assumes email confirmation is disabled on the Supabase project. With
   confirmation on, the immediate sign-in after sign-up will fail.
+- Docs holds one draft at a time, saved locally, not synced. The
+  `prompt_history` table is shaped for prompts, and filing documents in it
+  would mean abusing that schema. Export the document, or copy it out.
+- The Docs preview renders headings, lists, quotes, rules, and code blocks.
+  Tables show as raw markdown source.
 
 ## Licence
 
