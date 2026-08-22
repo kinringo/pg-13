@@ -1,0 +1,30 @@
+# macOS
+.DS_Store
+
+# Xcode build output
+build/
+DerivedData/
+*.xcuserstate
+*.xcworkspace/xcuserdata/
+**/xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Swift Package Manager
+.swiftpm/
+.build/
+Packages/
+
+# Secrets. Never commit an API key. PG-13 reads the Anthropic key from the
+# Keychain or the ANTHROPIC_API_KEY environment variable, never from a file.
+*.env
+.env*
+Secrets.swift
+*.p12
+*.mobileprovision
+
+# Superseded work, kept locally per project convention
+Archive/
