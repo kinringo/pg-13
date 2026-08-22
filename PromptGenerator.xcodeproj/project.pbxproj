@@ -6,14 +6,66 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		ABD9F34D2FA732010032D50D /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3442FA732010032D50D /* AppState.swift */; };
+		ABD9F34E2FA732010032D50D /* GenerateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3472FA732010032D50D /* GenerateView.swift */; };
+		ABD9F34F2FA732010032D50D /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F34B2FA732010032D50D /* Services.swift */; };
+		ABD9F3502FA732010032D50D /* FolderViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3462FA732010032D50D /* FolderViews.swift */; };
+		ABD9F3512FA732010032D50D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3492FA732010032D50D /* Models.swift */; };
+		ABD9F3522FA732010032D50D /* PlatformFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F34A2FA732010032D50D /* PlatformFields.swift */; };
+		ABD9F3532FA732010032D50D /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3482FA732010032D50D /* HistoryViews.swift */; };
+		ABD9F3542FA732010032D50D /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3452FA732010032D50D /* DesignSystem.swift */; };
+		ABEE0002AAAA0002AAAA0002 /* Markdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABEE0001AAAA0001AAAA0001 /* Markdown.swift */; };
+		ABD9F3552FA732010032D50D /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3442FA732010032D50D /* AppState.swift */; };
+		ABD9F3562FA732010032D50D /* GenerateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3472FA732010032D50D /* GenerateView.swift */; };
+		ABD9F3572FA732010032D50D /* Services.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F34B2FA732010032D50D /* Services.swift */; };
+		ABD9F3582FA732010032D50D /* FolderViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3462FA732010032D50D /* FolderViews.swift */; };
+		ABD9F3592FA732010032D50D /* Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3492FA732010032D50D /* Models.swift */; };
+		ABD9F35A2FA732010032D50D /* PlatformFields.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F34A2FA732010032D50D /* PlatformFields.swift */; };
+		ABD9F35B2FA732010032D50D /* HistoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3482FA732010032D50D /* HistoryViews.swift */; };
+		ABD9F35C2FA732010032D50D /* DesignSystem.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABD9F3452FA732010032D50D /* DesignSystem.swift */; };
+		ABEE0003AAAA0003AAAA0003 /* Markdown.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABEE0001AAAA0001AAAA0001 /* Markdown.swift */; };
+		AB0F1A2B3C4D5E6F70819204 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0F1A2B3C4D5E6F70819203 /* KeychainHelper.swift */; };
+		AB0F1A2B3C4D5E6F70819205 /* KeychainHelper.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB0F1A2B3C4D5E6F70819203 /* KeychainHelper.swift */; };
+		/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
-		ABCFED402FA6E4AE00C42769 /* PromptGenerator.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PromptGenerator.app; sourceTree = BUILT_PRODUCTS_DIR; };
-/* End PBXFileReference section */
+		ABCFED402FA6E4AE00C42769 /* PG-13.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PG-13.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABD9F3392FA731B60032D50D /* PG-13 iOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "PG-13 iOS.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		ABD9F3442FA732010032D50D /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
+		ABD9F3452FA732010032D50D /* DesignSystem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DesignSystem.swift; sourceTree = "<group>"; };
+		ABEE0001AAAA0001AAAA0001 /* Markdown.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Markdown.swift; sourceTree = "<group>"; };
+		ABD9F3462FA732010032D50D /* FolderViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FolderViews.swift; sourceTree = "<group>"; };
+		ABD9F3472FA732010032D50D /* GenerateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GenerateView.swift; sourceTree = "<group>"; };
+		ABD9F3482FA732010032D50D /* HistoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HistoryViews.swift; sourceTree = "<group>"; };
+		ABD9F3492FA732010032D50D /* Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Models.swift; sourceTree = "<group>"; };
+		ABD9F34A2FA732010032D50D /* PlatformFields.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlatformFields.swift; sourceTree = "<group>"; };
+		ABD9F34B2FA732010032D50D /* Services.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Services.swift; sourceTree = "<group>"; };
+		AB0F1A2B3C4D5E6F70819203 /* KeychainHelper.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = KeychainHelper.swift; path = KeychainHelper.swift; sourceTree = "<group>"; };
+		/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		ABCFED522FA6E84000C42769 /* Exceptions for "PromptGenerator" folder in "PromptGenerator" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = ABCFED3F2FA6E4AE00C42769 /* PromptGenerator */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		ABCFED422FA6E4AE00C42769 /* PromptGenerator */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				ABCFED522FA6E84000C42769 /* Exceptions for "PromptGenerator" folder in "PromptGenerator" target */,
+			);
 			path = PromptGenerator;
+			sourceTree = "<group>";
+		};
+		ABD9F33A2FA731B60032D50D /* PG-13 iOS */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = "PG-13 iOS";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -26,13 +78,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		ABD9F3362FA731B60032D50D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		ABCFED372FA6E4AE00C42769 = {
 			isa = PBXGroup;
 			children = (
+				ABD9F34C2FA732010032D50D /* Shared */,
 				ABCFED422FA6E4AE00C42769 /* PromptGenerator */,
+				ABD9F33A2FA731B60032D50D /* PG-13 iOS */,
 				ABCFED412FA6E4AE00C42769 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -40,9 +101,27 @@
 		ABCFED412FA6E4AE00C42769 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				ABCFED402FA6E4AE00C42769 /* PromptGenerator.app */,
+				ABCFED402FA6E4AE00C42769 /* PG-13.app */,
+				ABD9F3392FA731B60032D50D /* PG-13 iOS.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		ABD9F34C2FA732010032D50D /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				ABD9F3442FA732010032D50D /* AppState.swift */,
+				ABD9F3452FA732010032D50D /* DesignSystem.swift */,
+				ABEE0001AAAA0001AAAA0001 /* Markdown.swift */,
+				ABD9F3462FA732010032D50D /* FolderViews.swift */,
+				ABD9F3472FA732010032D50D /* GenerateView.swift */,
+				ABD9F3482FA732010032D50D /* HistoryViews.swift */,
+				ABD9F3492FA732010032D50D /* Models.swift */,
+				ABD9F34A2FA732010032D50D /* PlatformFields.swift */,
+				ABD9F34B2FA732010032D50D /* Services.swift */,
+				AB0F1A2B3C4D5E6F70819203 /* KeychainHelper.swift */,
+			);
+			path = Shared;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -67,7 +146,29 @@
 			packageProductDependencies = (
 			);
 			productName = PromptGenerator;
-			productReference = ABCFED402FA6E4AE00C42769 /* PromptGenerator.app */;
+			productReference = ABCFED402FA6E4AE00C42769 /* PG-13.app */;
+			productType = "com.apple.product-type.application";
+		};
+		ABD9F3382FA731B60032D50D /* PG-13 iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = ABD9F3432FA731B80032D50D /* Build configuration list for PBXNativeTarget "PG-13 iOS" */;
+			buildPhases = (
+				ABD9F3352FA731B60032D50D /* Sources */,
+				ABD9F3362FA731B60032D50D /* Frameworks */,
+				ABD9F3372FA731B60032D50D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				ABD9F33A2FA731B60032D50D /* PG-13 iOS */,
+			);
+			name = "PG-13 iOS";
+			packageProductDependencies = (
+			);
+			productName = "PG-13 iOS";
+			productReference = ABD9F3392FA731B60032D50D /* PG-13 iOS.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -81,6 +182,10 @@
 				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					ABCFED3F2FA6E4AE00C42769 = {
+						CreatedOnToolsVersion = 26.4.1;
+						LastSwiftMigration = 2640;
+					};
+					ABD9F3382FA731B60032D50D = {
 						CreatedOnToolsVersion = 26.4.1;
 					};
 				};
@@ -100,12 +205,20 @@
 			projectRoot = "";
 			targets = (
 				ABCFED3F2FA6E4AE00C42769 /* PromptGenerator */,
+				ABD9F3382FA731B60032D50D /* PG-13 iOS */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		ABCFED3E2FA6E4AE00C42769 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABD9F3372FA731B60032D50D /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -119,6 +232,33 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				ABD9F3552FA732010032D50D /* AppState.swift in Sources */,
+				ABD9F3562FA732010032D50D /* GenerateView.swift in Sources */,
+				ABD9F3572FA732010032D50D /* Services.swift in Sources */,
+				ABD9F3582FA732010032D50D /* FolderViews.swift in Sources */,
+				ABD9F3592FA732010032D50D /* Models.swift in Sources */,
+				ABD9F35A2FA732010032D50D /* PlatformFields.swift in Sources */,
+				ABD9F35B2FA732010032D50D /* HistoryViews.swift in Sources */,
+				ABD9F35C2FA732010032D50D /* DesignSystem.swift in Sources */,
+				ABEE0003AAAA0003AAAA0003 /* Markdown.swift in Sources */,
+				AB0F1A2B3C4D5E6F70819204 /* KeychainHelper.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABD9F3352FA731B60032D50D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				ABD9F34D2FA732010032D50D /* AppState.swift in Sources */,
+				ABD9F34E2FA732010032D50D /* GenerateView.swift in Sources */,
+				ABD9F34F2FA732010032D50D /* Services.swift in Sources */,
+				ABD9F3502FA732010032D50D /* FolderViews.swift in Sources */,
+				ABD9F3512FA732010032D50D /* Models.swift in Sources */,
+				ABD9F3522FA732010032D50D /* PlatformFields.swift in Sources */,
+				ABD9F3532FA732010032D50D /* HistoryViews.swift in Sources */,
+				ABD9F3542FA732010032D50D /* DesignSystem.swift in Sources */,
+				ABEE0002AAAA0002AAAA0002 /* Markdown.swift in Sources */,
+				AB0F1A2B3C4D5E6F70819205 /* KeychainHelper.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,14 +386,28 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8Z8247DWCJ;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PromptGenerator/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSUIElement = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -264,13 +418,13 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mariaelena.promptgenerator.PromptGenerator;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "PG-13";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -278,6 +432,8 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "PromptGenerator/PromptGenerator-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
@@ -290,14 +446,28 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8Z8247DWCJ;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_INCOMING_NETWORK_CONNECTIONS = NO;
+				ENABLE_OUTGOING_NETWORK_CONNECTIONS = YES;
 				ENABLE_PREVIEWS = YES;
-				ENABLE_USER_SELECTED_FILES = readonly;
+				ENABLE_RESOURCE_ACCESS_AUDIO_INPUT = NO;
+				ENABLE_RESOURCE_ACCESS_BLUETOOTH = NO;
+				ENABLE_RESOURCE_ACCESS_CALENDARS = NO;
+				ENABLE_RESOURCE_ACCESS_CAMERA = NO;
+				ENABLE_RESOURCE_ACCESS_CONTACTS = NO;
+				ENABLE_RESOURCE_ACCESS_LOCATION = NO;
+				ENABLE_RESOURCE_ACCESS_PRINTING = NO;
+				ENABLE_RESOURCE_ACCESS_USB = NO;
+				ENABLE_USER_SELECTED_FILES = readwrite;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = PromptGenerator/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSUIElement = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -308,13 +478,13 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 26.4;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.mariaelena.promptgenerator.PromptGenerator;
-				PRODUCT_NAME = "$(TARGET_NAME)";
+				PRODUCT_NAME = "PG-13";
 				REGISTER_APP_GROUPS = YES;
 				SDKROOT = auto;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -322,10 +492,80 @@
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "PromptGenerator/PromptGenerator-Bridging-Header.h";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2,7";
 				XROS_DEPLOYMENT_TARGET = 26.4;
+			};
+			name = Release;
+		};
+		ABD9F3412FA731B80032D50D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8Z8247DWCJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mariaelena.pg13.ios.PG-13-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		ABD9F3422FA731B80032D50D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 8Z8247DWCJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "com.mariaelena.pg13.ios.PG-13-iOS";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -346,6 +586,15 @@
 			buildConfigurations = (
 				ABCFED4C2FA6E4B100C42769 /* Debug */,
 				ABCFED4D2FA6E4B100C42769 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		ABD9F3432FA731B80032D50D /* Build configuration list for PBXNativeTarget "PG-13 iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				ABD9F3412FA731B80032D50D /* Debug */,
+				ABD9F3422FA731B80032D50D /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

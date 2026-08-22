@@ -28,3 +28,6 @@ Secrets.swift
 
 # Superseded work, kept locally per project convention
 Archive/
+
+# Claude Code local machine state
+.claude/settings.local.json
