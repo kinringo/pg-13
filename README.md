@@ -139,7 +139,8 @@ both themes come from one definition.
   rather than trying to sign you in on the spot.
 - Free Supabase projects pause after about a week idle. Sync, sign-in, and
   sign-up all fail until the project is resumed from the Supabase dashboard.
-  The app names that specifically rather than surfacing a DNS error.
+  The app names that specifically rather than surfacing a DNS error, and a
+  scheduled ping (see ARCHITECTURE.md) keeps the project awake.
 - Docs holds one draft at a time, saved locally, not synced. The
   `prompt_history` table is shaped for prompts, and filing documents in it
   would mean abusing that schema. Export the document, or copy it out.
