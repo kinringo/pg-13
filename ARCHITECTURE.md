@@ -107,6 +107,42 @@ Personal install, built in Xcode: Product, Archive, Distribute App, Copy App, Ex
 - App name PG-13 across `CFBundleDisplayName`, `CFBundleName`, `PRODUCT_NAME`.
 - Launch at login: System Settings, General, Login Items.
 
+## Keeping Supabase awake
+
+Free Supabase projects pause after about seven days without API activity. A
+paused project has its subdomain withdrawn from DNS, so sign-in, sign-up, and
+history sync all fail at the transport layer. This happened on 2026-09-02 and
+looked like a broken Create Account button. `Net.supabase` now names it.
+
+A launch agent pings the project once a day to stop it recurring. It lives
+outside this repo, since it holds no secret worth versioning and is specific to
+this machine:
+
+| Piece | Path |
+|---|---|
+| Script | `~/.local/bin/pg13-supabase-keepalive.sh` |
+| Launch agent | `~/Library/LaunchAgents/space.mariamaria.pg13-keepalive.plist` |
+| Log | `~/Library/Logs/pg13-keepalive.log` |
+
+The ping is a `select id limit 1` against `prompt_history` with the publishable
+key. Row-level security returns an empty array to an unauthenticated caller,
+which is the point: it proves RLS is working and still counts as activity.
+
+```bash
+# Check it is alive and see the recent history.
+launchctl list | grep pg13
+tail -5 ~/Library/Logs/pg13-keepalive.log
+```
+
+Two limits worth knowing. It only fires when this Mac is awake, so a stretch
+away longer than a week can still let the project pause. And the assumption
+that an API request resets the idle clock is Supabase's documented behaviour,
+not something verified here yet; the log is the evidence, so check it if the
+project pauses again.
+
+To remove it: `launchctl bootout gui/$UID/space.mariamaria.pg13-keepalive`,
+then delete the plist.
+
 ## Known gotchas
 
 - `import Combine` is required. This toolchain does not re-export `@Published` and `ObservableObject` through SwiftUI.
