@@ -1,0 +1,81 @@
+# Keeps the Supabase project awake, and checks row-level security while it is
+# there.
+#
+# Free Supabase projects pause after about a week without API activity. A
+# paused project has its subdomain withdrawn from DNS, so sign-in, sign-up, and
+# history sync fail at the transport layer with no useful error. One request
+# every couple of days resets that clock.
+#
+# The macOS launch agent does the same job, but only while that machine is
+# awake. This runs regardless.
+
+name: Supabase keepalive
+
+on:
+  schedule:
+    # Every other day at 09:17 UTC. The odd minute is deliberate: GitHub asks
+    # that scheduled jobs avoid the top of the hour, where load is highest and
+    # runs are most likely to be delayed or dropped.
+    - cron: "17 9 */2 * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      # Read the endpoint out of the app itself rather than duplicating it in
+      # repo variables. One source of truth: repoint SupabaseConfig and this
+      # follows automatically.
+      - name: Read Supabase config from Services.swift
+        id: config
+        run: |
+          set -euo pipefail
+          src="Shared/Services.swift"
+          url=$(grep -o 'https://[a-z0-9]*\.supabase\.co' "$src" | head -1)
+          key=$(grep -o 'sb_publishable_[A-Za-z0-9_-]*' "$src" | head -1)
+          if [ -z "$url" ] || [ -z "$key" ]; then
+            echo "Could not find the Supabase URL or publishable key in $src." >&2
+            echo "If SupabaseConfig was restructured, update this workflow." >&2
+            exit 1
+          fi
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "key=$key" >> "$GITHUB_OUTPUT"
+          echo "Pinging $url"
+
+      # The publishable key is designed to ship in the client and is already in
+      # the source. It grants nothing on its own: every row is gated by RLS on
+      # auth.uid(), and this request carries no user JWT.
+      - name: Ping the database
+        run: |
+          set -euo pipefail
+          url="${{ steps.config.outputs.url }}"
+          key="${{ steps.config.outputs.key }}"
+
+          body=$(mktemp)
+          code=$(curl -sS -o "$body" -w "%{http_code}" --max-time 30 \
+            --retry 3 --retry-delay 10 --retry-connrefused \
+            -H "apikey: $key" \
+            "$url/rest/v1/prompt_history?select=id&limit=1")
+
+          echo "HTTP $code"
+          echo "Body: $(cat "$body")"
+
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase returned HTTP $code. A 000 usually means the project is paused and needs resuming from the dashboard."
+            exit 1
+          fi
+
+          # An anonymous caller must see nothing. If rows come back, RLS is off
+          # or a policy was widened, and the public key is exposing real data.
+          if [ "$(cat "$body")" != "[]" ]; then
+            echo "::error::RLS check failed. An unauthenticated request returned rows. Review the policies on prompt_history immediately."
+            exit 1
+          fi
+
+          echo "Project awake. RLS returned no rows to an anonymous caller, as it should."

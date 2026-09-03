@@ -69,6 +69,7 @@ enum ServiceError: LocalizedError {
     case emptyResponse
     case exportFailed(String)
     case emailConfirmationRequired
+    case backendUnreachable
 
     var errorDescription: String? {
         switch self {
@@ -81,6 +82,8 @@ enum ServiceError: LocalizedError {
         case .exportFailed(let why):       return "Export failed. \(why)"
         case .emailConfirmationRequired:
             return "Account created. Click the link in the confirmation email, then sign in."
+        case .backendUnreachable:
+            return "Cannot reach the sync backend. Free Supabase projects pause after about a week idle. Open the Supabase dashboard and resume the project, then try again."
         }
     }
 }

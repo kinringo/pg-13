@@ -107,6 +107,70 @@ Personal install, built in Xcode: Product, Archive, Distribute App, Copy App, Ex
 - App name PG-13 across `CFBundleDisplayName`, `CFBundleName`, `PRODUCT_NAME`.
 - Launch at login: System Settings, General, Login Items.
 
+## Keeping Supabase awake
+
+Free Supabase projects pause after about seven days without API activity. A
+paused project has its subdomain withdrawn from DNS, so sign-in, sign-up, and
+history sync all fail at the transport layer. This happened on 2026-09-02 and
+looked like a broken Create Account button. `Net.supabase` now names it.
+
+Two pings stop it recurring, on purpose. They fail in different ways, so
+neither is a single point of failure.
+
+### 1. GitHub Action (primary)
+
+`.github/workflows/supabase-keepalive.yml`, every other day at 09:17 UTC, plus
+a manual `workflow_dispatch` button. Runs in the cloud, so it does not care
+whether any machine is switched on.
+
+It reads the URL and publishable key out of `Shared/Services.swift` at runtime
+rather than duplicating them in repo variables. One source of truth: repoint
+`SupabaseConfig` and the workflow follows. If that struct is ever restructured
+the workflow fails loudly rather than silently pinging nothing.
+
+It also asserts that an unauthenticated request returns `[]`. If rows ever come
+back, RLS has been switched off or a policy widened, and the run fails. That
+turns the keepalive into a standing check on the one thing that makes shipping
+a public key safe.
+
+One caveat: GitHub disables scheduled workflows in repositories with no commits
+for 60 days, and emails the owner first. A commit, or the manual dispatch
+button, re-enables it.
+
+### 2. macOS launch agent (backup)
+
+Once a day, while this Mac is awake. Lives outside the repo, since it holds no
+secret worth versioning and is specific to this machine:
+
+| Piece | Path |
+|---|---|
+| Script | `~/.local/bin/pg13-supabase-keepalive.sh` |
+| Launch agent | `~/Library/LaunchAgents/space.mariamaria.pg13-keepalive.plist` |
+| Log | `~/Library/Logs/pg13-keepalive.log` |
+
+```bash
+# Check it is alive and see the recent history.
+launchctl list | grep pg13
+tail -5 ~/Library/Logs/pg13-keepalive.log
+
+# Remove it.
+launchctl bootout gui/$UID/space.mariamaria.pg13-keepalive
+rm ~/Library/LaunchAgents/space.mariamaria.pg13-keepalive.plist
+```
+
+### The request, and what is unproven
+
+Both pings send the same thing: `select id limit 1` against `prompt_history`
+with the publishable key. Row-level security returns an empty array to an
+unauthenticated caller, which is the point. It counts as activity and proves
+RLS is working in the same request.
+
+The premise, that an API request resets Supabase's idle clock, is their
+documented behaviour and has not been verified here across a full seven-day
+cycle. The Action history and the local log are the evidence. If the project
+pauses again despite green runs, the premise is wrong and the ping needs to be
+heavier, most likely an authenticated write.
+
 ## Known gotchas
 
 - `import Combine` is required. This toolchain does not re-export `@Published` and `ObservableObject` through SwiftUI.
