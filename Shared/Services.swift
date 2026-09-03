@@ -3,6 +3,34 @@
 import Foundation
 import Combine
 
+// MARK: - Networking
+
+enum Net {
+    /// One place where transport failures become a sentence a person can act on.
+    ///
+    /// A paused Supabase project has its subdomain withdrawn from DNS, so every
+    /// call fails with `URLError.cannotFindHost` before it reaches any of our
+    /// error handling. Left raw, that surfaces as "A server with the specified
+    /// hostname could not be found", which reads as the button being broken
+    /// rather than the backend being asleep.
+    ///
+    /// Supabase calls only. The Anthropic endpoint stays on plain URLSession,
+    /// because "the project is paused" is the wrong thing to say about it.
+    static func supabase(_ req: URLRequest) async throws -> (Data, URLResponse) {
+        do {
+            return try await URLSession.shared.data(for: req)
+        } catch let error as URLError {
+            switch error.code {
+            case .cannotFindHost, .cannotConnectToHost, .dnsLookupFailed,
+                 .notConnectedToInternet, .networkConnectionLost, .timedOut:
+                throw ServiceError.backendUnreachable
+            default:
+                throw error
+            }
+        }
+    }
+}
+
 // MARK: - ClaudeService
 
 class ClaudeService {
@@ -123,7 +151,7 @@ class AuthService: ObservableObject {
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
         req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
         req.httpBody = try JSONEncoder().encode(body)
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await Net.supabase(req)
         if let http = response as? HTTPURLResponse, http.statusCode >= 300 {
             struct AuthError: Codable { let msg: String?; let error_description: String?; let message: String? }
             let e = try? JSONDecoder().decode(AuthError.self, from: data)
@@ -225,7 +253,7 @@ class CloudHistoryStore {
     }
 
     private func run(_ req: URLRequest, _ action: String) async throws -> Data {
-        let (data, response) = try await URLSession.shared.data(for: req)
+        let (data, response) = try await Net.supabase(req)
         if let http = response as? HTTPURLResponse, http.statusCode >= 300 {
             // PostgREST returns a structured error. Surface only its message, never
             // the raw body, which can echo row contents back into the UI.
