@@ -1,6 +1,6 @@
 # PG-13 architecture
 
-Rewritten 2026-08-14 against the code, replacing the 2026-05 version that had drifted in five places. Pre-edit copy: `~/Claude/Archive/pg13-architecture-2026-08-14-pre-audit.md`.
+Rewritten 2026-08-14 against the code, replacing the 2026-05 version that had drifted in five places. Pre-edit copy: `~/Claude/Archive/pg13-architecture-2026-08-14-pre-audit.md`. Re-checked 2026-09-03 (Supabase URL, migration, app icon). Pre-edit copy for that pass: `~/Claude/Archive/pg13-architecture-2026-09-03-pre-migration-fix.md`.
 
 Everything below was verified by reading the source, not carried over from the old doc. Where the doc and the code disagree in future, the code wins and this file is the thing to fix.
 
@@ -48,11 +48,11 @@ Design-and-Code/PG-13/
 
 `Shared/Services.swift`:
 
-- **ClaudeService**: model `claude-sonnet-5` (line 23), direct `URLSession` HTTP, `x-api-key` header, `anthropic-version: 2023-06-01`.
-- **SupabaseConfig**: `https://lgbkozbwnilhsuvfpxnd.supabase.co` (line 55). The old doc said project `mamflwiavkwybrsttwlr`; that was the pre-auth project and is no longer what ships.
+- **ClaudeService**: model `claude-sonnet-5` (line 52), direct `URLSession` HTTP, `x-api-key` header, `anthropic-version: 2023-06-01`.
+- **SupabaseConfig**: `https://kxkpewnebbftderbizph.supabase.co` (line 93). Earlier docs named `lgbkozbwnilhsuvfpxnd` (post-auth project) and `mamflwiavkwybrsttwlr` (pre-auth). Neither is what ships now. The keepalive workflow reads this URL from source, so it follows a repoint automatically.
 - **AuthService**: Supabase Auth. Session stored in Keychain under `supabase_session`.
 - **CloudHistoryStore**: per-user rows with RLS.
-- **HistoryStore**: local on-device store, kept for the migration path.
+- **HistoryStore**: local on-device store, used only for the one-time migration path. Live save/load goes through the cloud store. Unsigned users can generate and export; Save on Generate fails until they sign in.
 
 ### Credential storage
 
@@ -179,8 +179,13 @@ heavier, most likely an authenticated write.
 
 ## Open risks
 
-Carried from the 2026-07-22 audit, still unfixed in the code:
+Carried from the 2026-07-22 audit, re-checked against the code on 2026-09-03:
 
-1. **Migration can drop history.** `CloudHistoryStore.migrateLocalIfNeeded()` calls `savePrompt` with `try?` per record, and `HistoryStore.migrateOut()` renames the local file to `.migrated` before any cloud save is confirmed. If saves fail partway (offline, expired session), those records never reach the cloud and the local file is already retired. Fix: only retire the file after every save succeeds. This becomes real the moment sync runs on a second device, which the iOS target now makes likely.
-2. **App icon set.** `AppIcon.appiconset/Contents.json` points the 1024 marketing slot at a file named `broken.png`, and two 1024 entries have no filename. Xcode warns; App Store submission would fail. Low stakes for a personal install.
-3. `GenerateViewModel.clear()` does not reset `copyFlash` and `shareFlash`. The History folder list is fetched once per load, so a folder created on another device will not appear until reload. Both cosmetic.
+1. **iOS app icon.** macOS `AppIcon.appiconset` has real PNGs for every mac slot. iOS still has dark and tinted 1024 entries with no `filename`. Xcode warns; App Store / TestFlight would fail. Low stakes for a personal install. The old `broken.png` marketing slot is gone.
+2. `GenerateViewModel.clear()` does not reset `copyFlash` and `shareFlash`. The History folder list is fetched once per load, so a folder created on another device will not appear until reload. Both cosmetic.
+
+### Fixed 2026-09-03: local migration no longer retires first
+
+`CloudHistoryStore.migrateLocalIfNeeded()` used to call `HistoryStore.migrateOut()`, which renamed the local file to `.migrated` before any cloud save was confirmed, and each save used `try?`. Offline or expired-session failures dropped those records.
+
+The local file is now read with `peekPending()`, each record is saved with a real `do/catch`, and `finishMigration(keeping:)` either retires the file (all saved) or rewrites it with the leftovers (retry on the next sign-in). Records that already landed in the cloud are dropped from the local file so a retry does not duplicate them.

@@ -331,15 +331,23 @@ class CloudHistoryStore {
         _ = try await run(req, "Delete")
     }
 
-    /// One-time: pushes records saved locally (pre-sync builds) to the cloud,
-    /// then renames the local file so it never runs twice.
+    /// One-time: pushes records saved locally (pre-sync builds) to the cloud.
+    /// The local file is retired only after every record is saved. Failed
+    /// records stay on disk so a later sign-in can retry without dropping them.
     func migrateLocalIfNeeded() async {
-        let locals = HistoryStore.shared.migrateOut()
+        let locals = HistoryStore.shared.peekPending()
+        guard !locals.isEmpty else { return }
+        var leftover: [PromptRecord] = []
         for r in locals {
-            try? await savePrompt(goal: r.goal, role: r.role ?? "", tone: r.tone ?? "",
-                                  style: r.style ?? "", prompt: r.generated_prompt,
-                                  folder: r.folder)
+            do {
+                try await savePrompt(goal: r.goal, role: r.role ?? "", tone: r.tone ?? "",
+                                    style: r.style ?? "", prompt: r.generated_prompt,
+                                    folder: r.folder)
+            } catch {
+                leftover.append(r)
+            }
         }
+        HistoryStore.shared.finishMigration(keeping: leftover)
     }
 }
 
@@ -444,16 +452,23 @@ class HistoryStore {
         }
     }
 
-    /// Returns all local records and retires the file (kept as .migrated backup).
-    func migrateOut() -> [PromptRecord] {
+    /// Local records still waiting to sync. Does not touch the file.
+    func peekPending() -> [PromptRecord] {
+        queue.sync { loadAll() }
+    }
+
+    /// After a migration attempt: rewrite the file with records that did not
+    /// save, or retire it to `.migrated` when the queue is empty.
+    func finishMigration(keeping leftover: [PromptRecord]) {
         queue.sync {
-            let records = loadAll()
-            if !records.isEmpty {
+            if leftover.isEmpty {
+                guard FileManager.default.fileExists(atPath: fileURL.path) else { return }
                 let backup = fileURL.appendingPathExtension("migrated")
                 try? FileManager.default.removeItem(at: backup)
                 try? FileManager.default.moveItem(at: fileURL, to: backup)
+            } else {
+                try? writeAll(leftover)
             }
-            return records
         }
     }
 }
