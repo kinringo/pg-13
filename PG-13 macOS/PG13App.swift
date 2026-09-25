@@ -1,4 +1,4 @@
-// PromptGenerator.swift — macOS only (AppDelegate + ContentView)
+// PG13App.swift: macOS only (AppDelegate + ContentView)
 
 import SwiftUI
 import AppKit

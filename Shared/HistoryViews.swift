@@ -325,13 +325,7 @@ struct HistoryItemView: View {
                                 }
                             }
                             if !filteredFolders.isEmpty {
-                                if #available(macOS 13.0, iOS 16.0, *) {
-                                    FlowLayout(spacing: 4) { folderChips }
-                                } else {
-                                    ScrollView(.horizontal, showsIndicators: false) {
-                                        HStack(spacing: 4) { folderChips }
-                                    }
-                                }
+                                FlowLayout(spacing: 4) { folderChips }
                             }
                         }
                     }
@@ -355,12 +349,8 @@ struct HistoryItemView: View {
     @ViewBuilder var actionButtons: some View {
         QMButton(label: "Copy", flexible: true) { copyToPasteboard(record.generated_prompt) }
         QMButton(label: shareFlash ? "Shared" : "Share", style: shareFlash ? .active : .ghost, flexible: true) {
-            var lines = ["---", "Goal: \(record.goal)"]
-            if let r = record.role,  !r.isEmpty { lines.append("Role: \(r)") }
-            if let t = record.tone,  !t.isEmpty { lines.append("Tone: \(t)") }
-            if let s = record.style, !s.isEmpty { lines.append("Output Type: \(s)") }
-            lines += ["---", record.generated_prompt, "---"]
-            let text = lines.joined(separator: "\n")
+            let text = shareText(goal: record.goal, role: record.role, tone: record.tone,
+                                 style: record.style, prompt: record.generated_prompt)
 #if os(iOS)
             shareSheetText = text
             showShareSheet = true

@@ -33,33 +33,33 @@ struct GenerateView: View {
                     }
 
                     // 1. Role
-                    field(label: "Role or Background") {
+                    FormField(label: "Role or Background") {
                         PlatformTextField(
                             placeholder: "Senior product manager, student, developer…",
                             text: $vm.role)
                     }
 
                     // 2. Goal
-                    field(label: "Goal / Request") {
+                    FormField(label: "Goal / Request") {
                         PlatformTextArea(
                             placeholder: "What should this prompt help you accomplish?",
                             text: $vm.goal)
                     }
 
                     // 3. Extra Information (optional)
-                    field(label: "Extras & Adjustments", optional: true) {
+                    FormField(label: "Extras & Adjustments", optional: true) {
                         PlatformTextArea(
                             placeholder: "Audience, constraints, examples, context…",
                             text: $vm.extraInfo)
                     }
 
                     // 4. Tone
-                    field(label: "Tone") {
+                    FormField(label: "Tone") {
                         TagFlow(items: vm.tones, selected: $vm.selectedTone)
                     }
 
                     // 5. Output Type
-                    field(label: "Output Type") {
+                    FormField(label: "Output Type") {
                         TagFlow(items: vm.outputTypes, selected: $vm.selectedOutputType)
                     }
 
@@ -139,27 +139,6 @@ struct GenerateView: View {
         vm.errorMessage = ""
         exporter.export(vm.makeMarkdown(), fileName: Markdown.fileName(for: vm.goal))
     }
-
-    @ViewBuilder
-    private func field<Content: View>(
-        label: String,
-        optional: Bool = false,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                FieldLabel(text: label)
-                if optional {
-                    Text("optional")
-                        .font(QM.mono(8))
-                        .foregroundColor(QM.textMuted)
-                        .tracking(0.5)
-                }
-            }
-            content()
-        }
-        .padding(.bottom, 12)
-    }
 }
 
 // MARK: - ResultSection
@@ -232,11 +211,8 @@ struct ResultSection: View {
         QMButton(label: vm.shareFlash ? "Shared" : "Share", style: vm.shareFlash ? .active : .ghost, flexible: true) {
 #if os(iOS)
             showShareSheet = true
-            vm.shareFlash = true
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { vm.shareFlash = false }
-#else
-            vm.share()
 #endif
+            vm.share()
         }
         QMButton(label: "Save", flexible: true)  { vm.save(folder: nil) }
         QMButton(label: vm.isEditing ? "Done" : "Edit", style: vm.isEditing ? .active : .ghost, flexible: true) { vm.isEditing.toggle() }

@@ -78,6 +78,7 @@ class GenerateViewModel: ObservableObject {
         selectedTone = ""; selectedOutputType = ""
         generatedPrompt = ""; errorMessage = ""; version = 0
         isEditing = false; refineInput = ""; savedMessage = ""
+        copyFlash = false; shareFlash = false
     }
 
     func generate() {
@@ -113,7 +114,7 @@ class GenerateViewModel: ObservableObject {
             do {
                 let result = try await ClaudeService.shared.generate(
                     systemPrompt: buildRefineSystemPrompt(),
-                    userMessage: "Prompt to revise:\n\(generatedPrompt)\n\nRequested change:\n\(capped(refineInput, 1000))",
+                    userMessage: "Prompt to revise:\n\(generatedPrompt)\n\nRequested change:\n\(refineInput.capped(1000))",
                     maxTokens: maxTokensForRequest)
                 await MainActor.run {
                     self.generatedPrompt = result; self.version += 1
@@ -149,13 +150,8 @@ class GenerateViewModel: ObservableObject {
     }
 
     func makeShareText() -> String {
-        var lines = ["---"]
-        if !goal.isEmpty               { lines.append("Goal: \(goal)") }
-        if !role.isEmpty               { lines.append("Role: \(role)") }
-        if !selectedTone.isEmpty       { lines.append("Tone: \(selectedTone)") }
-        if !selectedOutputType.isEmpty { lines.append("Output Type: \(selectedOutputType)") }
-        lines += ["---", generatedPrompt, "---"]
-        return lines.joined(separator: "\n")
+        shareText(goal: goal, role: role, tone: selectedTone,
+                  style: selectedOutputType, prompt: generatedPrompt)
     }
 
     func makeMarkdown() -> String {
@@ -163,8 +159,11 @@ class GenerateViewModel: ObservableObject {
                           style: selectedOutputType, prompt: generatedPrompt)
     }
 
+    /// macOS copies the text; iOS presents a share sheet and only needs the flash.
     func share() {
+#if os(macOS)
         copyToPasteboard(makeShareText())
+#endif
         shareFlash = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { self.shareFlash = false }
     }
@@ -195,11 +194,6 @@ class GenerateViewModel: ObservableObject {
 
     /// Headroom for the response. Structured formats legitimately run longer.
     private var maxTokensForRequest: Int { wantsStructuredOutput ? 1024 : 512 }
-
-    /// Guards against a huge paste inflating every request.
-    private func capped(_ s: String, _ limit: Int) -> String {
-        s.count <= limit ? s : String(s.prefix(limit)) + "..."
-    }
 
     private func buildSystemPrompt() -> String {
         var parts = [
@@ -233,9 +227,9 @@ class GenerateViewModel: ObservableObject {
     }
 
     private func buildUserMessage() -> String {
-        var msg = "Goal: \(capped(goal, 2000))"
-        if !role.isEmpty      { msg += "\nRole/Background: \(capped(role, 500))" }
-        if !extraInfo.isEmpty { msg += "\nAdditional context: \(capped(extraInfo, 2000))" }
+        var msg = "Goal: \(goal.capped(2000))"
+        if !role.isEmpty      { msg += "\nRole/Background: \(role.capped(500))" }
+        if !extraInfo.isEmpty { msg += "\nAdditional context: \(extraInfo.capped(2000))" }
         return msg
     }
 }
@@ -269,9 +263,7 @@ class HistoryViewModel: ObservableObject {
         }
     }
 
-    func toggleExpand(_ id: String) {
-        if expandedIDs.contains(id) { expandedIDs.remove(id) } else { expandedIDs.insert(id) }
-    }
+    func toggleExpand(_ id: String) { expandedIDs.toggle(id) }
 
     func delete(_ record: PromptRecord) {
         Task {
@@ -290,11 +282,7 @@ class HistoryViewModel: ObservableObject {
                 try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
                 await MainActor.run {
                     if let idx = self.records.firstIndex(where: { $0.id == record.id }) {
-                        let r = self.records[idx]
-                        self.records[idx] = PromptRecord(
-                            id: r.id, goal: r.goal, role: r.role, tone: r.tone, style: r.style,
-                            generated_prompt: r.generated_prompt, folder: folder,
-                            created_at: r.created_at, used: r.used)
+                        self.records[idx] = self.records[idx].withFolder(folder)
                     }
                     self.folderInputID = nil; self.folderInputText = ""
                     if let f = folder, !self.folderNames.contains(f) {
@@ -358,7 +346,5 @@ class FoldersViewModel: ObservableObject {
         }
     }
 
-    func toggleExpand(_ id: String) {
-        if expandedIDs.contains(id) { expandedIDs.remove(id) } else { expandedIDs.insert(id) }
-    }
+    func toggleExpand(_ id: String) { expandedIDs.toggle(id) }
 }

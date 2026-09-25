@@ -92,7 +92,7 @@ struct QMTextArea: NSViewRepresentable {
         tv.allowsUndo = true
         tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
         tv.textColor = .labelColor             // adaptive
-        tv.insertionPointColor = NSColor(Color(hex: "00E5FF"))  // cyan cursor
+        tv.insertionPointColor = NSColor(QM.accentCyan)
         tv.backgroundColor = .clear
         tv.drawsBackground = false
         tv.isAutomaticQuoteSubstitutionEnabled = false

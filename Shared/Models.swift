@@ -37,6 +37,12 @@ struct PromptRecord: Codable, Identifiable {
     let created_at: String
     let used: Bool?
 
+    func withFolder(_ folder: String?) -> PromptRecord {
+        PromptRecord(id: id, goal: goal, role: role, tone: tone, style: style,
+                     generated_prompt: generated_prompt, folder: folder,
+                     created_at: created_at, used: used)
+    }
+
     var displayDate: String {
         guard let date = Self.isoFull.date(from: created_at)
                       ?? Self.isoShort.date(from: created_at) else { return created_at }
@@ -56,6 +62,34 @@ struct PromptRecord: Codable, Identifiable {
     private static let display: DateFormatter = {
         let f = DateFormatter(); f.dateFormat = "MMM d"; return f
     }()
+}
+
+// MARK: - Plain-text share format
+
+/// The `---` framed block used by every Share button.
+func shareText(goal: String, role: String?, tone: String?, style: String?, prompt: String) -> String {
+    var lines = ["---"]
+    if !goal.isEmpty                      { lines.append("Goal: \(goal)") }
+    if let r = role,  !r.isEmpty          { lines.append("Role: \(r)") }
+    if let t = tone,  !t.isEmpty          { lines.append("Tone: \(t)") }
+    if let s = style, !s.isEmpty          { lines.append("Output Type: \(s)") }
+    lines += ["---", prompt, "---"]
+    return lines.joined(separator: "\n")
+}
+
+// MARK: - Small helpers
+
+extension String {
+    /// Guards against a huge paste inflating every request.
+    func capped(_ limit: Int) -> String {
+        count <= limit ? self : String(prefix(limit)) + "..."
+    }
+}
+
+extension Set {
+    mutating func toggle(_ member: Element) {
+        if contains(member) { remove(member) } else { insert(member) }
+    }
 }
 
 // MARK: - ServiceError
