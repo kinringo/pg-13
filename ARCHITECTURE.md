@@ -1,6 +1,6 @@
 # PG-13 architecture
 
-Rewritten 2026-08-14 against the code, replacing the 2026-05 version that had drifted in five places. Pre-edit copy: `~/Claude/Archive/pg13-architecture-2026-08-14-pre-audit.md`. Re-checked 2026-09-03 (Supabase URL, migration, app icon). Pre-edit copy for that pass: `~/Claude/Archive/pg13-architecture-2026-09-03-pre-migration-fix.md`.
+Rewritten 2026-08-14 against the code, replacing the 2026-05 version that had drifted in five places. Pre-edit copy: `~/Claude/Archive/pg13-architecture-2026-08-14-pre-audit.md`. Re-checked 2026-09-03 (Supabase URL, migration, app icon) and 2026-09-23 (lean pass). Pre-edit copy for that pass: `~/Claude/Archive/pg13-architecture-2026-09-03-pre-migration-fix.md`.
 
 Everything below was verified by reading the source, not carried over from the old doc. Where the doc and the code disagree in future, the code wins and this file is the thing to fix.
 
@@ -11,7 +11,7 @@ A prompt generator built on the Claude API, with prompts saved to Supabase. Two 
 - **macOS**: a menu bar app. Sparkles icon in the status bar, floating NSPanel, non-activating.
 - **iOS**: `PG-13 iOS/PG13iOSApp.swift`, added since the last version of this doc. A stale duplicate at `PG13iOS/` was never in the target and was archived on 2026-08-21.
 
-The panel is *not* always-on-top. `PG13App.swift` line 125 sets `panel.level = .normal`, so it behaves like a normal window in the stacking order.
+The panel is *not* always-on-top. `PG13App.swift` line 127 sets `panel.level = .normal`, so it behaves like a normal window in the stacking order.
 
 ## File layout
 
@@ -22,10 +22,10 @@ Design-and-Code/PG-13/
   Shared/                      ← cross-platform, both targets
     AppState.swift             AppState + GenerateViewModel + HistoryViewModel
     Services.swift             ClaudeService, SupabaseConfig, AuthService, CloudHistoryStore, HistoryStore
-    DesignSystem.swift         enum QM tokens, QMButton, FieldLabel
+    DesignSystem.swift         enum QM tokens, QMButton, FieldLabel, FormField
     PlatformFields.swift       QMTextField / QMTextArea wrappers
     KeychainHelper.swift       Keychain read/write + UserDefaults migration
-    Models.swift               PromptRecord and friends
+    Models.swift               PromptRecord, shareText(), String.capped, ServiceError, Anthropic types
     Markdown.swift             document builder, linter, MarkdownExporter, MarkdownDocViewModel, MarkdownPreview, DocsView
     GenerateView.swift
     HistoryViews.swift
@@ -52,7 +52,7 @@ Design-and-Code/PG-13/
 - **SupabaseConfig**: `https://kxkpewnebbftderbizph.supabase.co` (line 93). Earlier docs named `lgbkozbwnilhsuvfpxnd` (post-auth project) and `mamflwiavkwybrsttwlr` (pre-auth). Neither is what ships now. The keepalive workflow reads this URL from source, so it follows a repoint automatically.
 - **AuthService**: Supabase Auth. Session stored in Keychain under `supabase_session`.
 - **CloudHistoryStore**: per-user rows with RLS.
-- **HistoryStore**: local on-device store, used only for the one-time migration path. Live save/load goes through the cloud store. Unsigned users can generate and export; Save on Generate fails until they sign in.
+- **HistoryStore**: reads and retires the pre-sync `prompt_history.json`. It has no other API; it exists only for the one-time migration. Live save/load goes through the cloud store. Unsigned users can generate and export; Save on Generate fails until they sign in.
 
 ### Credential storage
 
@@ -91,7 +91,7 @@ This is the legacy Quiet Machinery system and it stays. Soft OS v2 is the web sy
 - `QMTextField`: single-line `NSTextField` wrapper, mono, no focus ring.
 - `QMTextArea`: multiline `_QMTextView` inside an NSScrollView. Overrides `mouseDown` to force first responder, which is how deletion works reliably inside a non-activating panel.
 - `QMButton`: `.primary` / `.ghost` / `.danger` / `.active`.
-- `TagToggle`, `FlowLayout` (macOS 13+ `Layout`), `onChangeCompat` for the macOS 13 vs 14 `onChange` signature split.
+- `TagToggle`, `FormField`, `FlowLayout` (a `Layout`; the deployment targets are macOS 13 / iOS 16, so it needs no fallback), `onChangeCompat` for the macOS 13 vs 14 `onChange` signature split.
 
 ## Stoplight buttons (macOS)
 
@@ -182,7 +182,7 @@ heavier, most likely an authenticated write.
 Carried from the 2026-07-22 audit, re-checked against the code on 2026-09-03:
 
 1. **iOS app icon.** macOS `AppIcon.appiconset` has real PNGs for every mac slot. iOS still has dark and tinted 1024 entries with no `filename`. Xcode warns; App Store / TestFlight would fail. Low stakes for a personal install. The old `broken.png` marketing slot is gone.
-2. `GenerateViewModel.clear()` does not reset `copyFlash` and `shareFlash`. The History folder list is fetched once per load, so a folder created on another device will not appear until reload. Both cosmetic.
+2. The History folder list is fetched once per load, so a folder created on another device will not appear until reload. Cosmetic.
 
 ### Fixed 2026-09-03: local migration no longer retires first
 

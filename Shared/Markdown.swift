@@ -422,7 +422,7 @@ final class MarkdownDocViewModel: ObservableObject {
             do {
                 let result = try await ClaudeService.shared.generate(
                     systemPrompt: refineSystemPrompt,
-                    userMessage: "Document:\n\(capped(content, 12000))\n\nRequested change:\n\(capped(ask, 1000))",
+                    userMessage: "Document:\n\(content.capped(12000))\n\nRequested change:\n\(ask.capped(1000))",
                     // Revision returns the whole document, so it needs at least
                     // as much headroom as the original generation did.
                     maxTokens: max(maxTokens, 2500))
@@ -489,10 +489,6 @@ final class MarkdownDocViewModel: ObservableObject {
         }
     }
 
-    private func capped(_ s: String, _ limit: Int) -> String {
-        s.count <= limit ? s : String(s.prefix(limit)) + "..."
-    }
-
     private func buildSystemPrompt() -> String {
         [
             "Write a complete \(effectiveDocType) as a GitHub-flavored markdown document. Return only the markdown. No commentary before or after it, and do not wrap the document in a code fence.",
@@ -513,10 +509,10 @@ final class MarkdownDocViewModel: ObservableObject {
 
     private func buildUserMessage() -> String {
         var msg = "Document type: \(effectiveDocType)"
-        if !title.isEmpty     { msg += "\nTitle: \(capped(title, 200))" }
-        msg += "\nSubject: \(capped(subject, 3000))"
-        if !audience.isEmpty  { msg += "\nAudience: \(capped(audience, 300))" }
-        if !mustCover.isEmpty { msg += "\nMust cover: \(capped(mustCover, 2000))" }
+        if !title.isEmpty     { msg += "\nTitle: \(title.capped(200))" }
+        msg += "\nSubject: \(subject.capped(3000))"
+        if !audience.isEmpty  { msg += "\nAudience: \(audience.capped(300))" }
+        if !mustCover.isEmpty { msg += "\nMust cover: \(mustCover.capped(2000))" }
         return msg
     }
 }
@@ -701,26 +697,26 @@ struct DocsView: View {
     // MARK: Brief
 
     @ViewBuilder private var brief: some View {
-        field(label: "Document Type") {
+        FormField(label: "Document Type") {
             TagFlow(items: vm.docTypes, selected: $vm.docType)
         }
-        field(label: "Title", optional: true) {
+        FormField(label: "Title", optional: true) {
             PlatformTextField(placeholder: "Left blank, Claude writes one",
                               text: $vm.title)
         }
-        field(label: "What It Covers") {
+        FormField(label: "What It Covers") {
             PlatformTextArea(placeholder: "The subject, in as much detail as you have",
                              text: $vm.subject)
         }
-        field(label: "Audience", optional: true) {
+        FormField(label: "Audience", optional: true) {
             PlatformTextField(placeholder: "New engineer, client, hiring manager…",
                               text: $vm.audience)
         }
-        field(label: "Must Cover", optional: true) {
+        FormField(label: "Must Cover", optional: true) {
             PlatformTextArea(placeholder: "Required sections, facts, constraints, source text…",
                              text: $vm.mustCover)
         }
-        field(label: "Depth") {
+        FormField(label: "Depth") {
             TagFlow(items: vm.depths, selected: $vm.depth)
         }
     }
@@ -849,24 +845,5 @@ struct DocsView: View {
             .frame(minHeight: 200, maxHeight: 420)
             .overlay(Rectangle().stroke(QM.borderTeal.opacity(0.3), lineWidth: 1))
         }
-    }
-
-    @ViewBuilder
-    private func field<Content: View>(
-        label: String,
-        optional: Bool = false,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
-                FieldLabel(text: label)
-                if optional {
-                    Text("optional")
-                        .font(QM.mono(8)).foregroundColor(QM.textMuted).tracking(0.5)
-                }
-            }
-            content()
-        }
-        .padding(.bottom, 12)
     }
 }

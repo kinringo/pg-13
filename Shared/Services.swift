@@ -264,24 +264,25 @@ class CloudHistoryStore {
         return data
     }
 
-    func fetchHistory() async throws -> [PromptRecord] {
-        let req = try await makeRequest(queryItems: [
-            URLQueryItem(name: "order", value: "created_at.desc"),
-            URLQueryItem(name: "limit", value: "50"),
-        ], method: "GET")
-        let data = try await run(req, "Load history")
+    private func fetchRecords(_ queryItems: [URLQueryItem], _ action: String) async throws -> [PromptRecord] {
+        let req = try await makeRequest(queryItems: queryItems, method: "GET")
+        let data = try await run(req, action)
         do { return try JSONDecoder().decode([PromptRecord].self, from: data) }
         catch { throw ServiceError.decodingError(error) }
     }
 
+    func fetchHistory() async throws -> [PromptRecord] {
+        try await fetchRecords([
+            URLQueryItem(name: "order", value: "created_at.desc"),
+            URLQueryItem(name: "limit", value: "50"),
+        ], "Load history")
+    }
+
     func fetchFolder(_ folder: String) async throws -> [PromptRecord] {
-        let req = try await makeRequest(queryItems: [
+        try await fetchRecords([
             URLQueryItem(name: "folder", value: eq(folder)),
             URLQueryItem(name: "order", value: "created_at.desc"),
-        ], method: "GET")
-        let data = try await run(req, "Load folder")
-        do { return try JSONDecoder().decode([PromptRecord].self, from: data) }
-        catch { throw ServiceError.decodingError(error) }
+        ], "Load folder")
     }
 
     func fetchFolderNames() async throws -> [(name: String, count: Int)] {
@@ -353,8 +354,8 @@ class CloudHistoryStore {
 
 // MARK: - HistoryStore (local, on-device)
 
-/// Prompt history lives in a JSON file in the app's sandboxed Application
-/// Support directory — no cloud, no shared keys, nothing leaves the device.
+/// Pre-sync builds kept history in a JSON file in Application Support. This
+/// store only exists to hand those records to `CloudHistoryStore` once.
 class HistoryStore {
     static let shared = HistoryStore()
 
@@ -366,14 +367,8 @@ class HistoryStore {
         return dir.appendingPathComponent("prompt_history.json")
     }()
 
-    /// Serializes all reads/writes so concurrent view-model calls can't interleave.
+    /// Serializes reads and writes of the file.
     private let queue = DispatchQueue(label: "com.pg13.historystore")
-
-    private static let iso: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
 
     private func loadAll() -> [PromptRecord] {
         guard let data = try? Data(contentsOf: fileURL) else { return [] }
@@ -383,73 +378,6 @@ class HistoryStore {
     private func writeAll(_ records: [PromptRecord]) throws {
         let data = try JSONEncoder().encode(records)
         try data.write(to: fileURL, options: .atomic)
-    }
-
-    private func onQueue<T>(_ work: @escaping () throws -> T) async throws -> T {
-        try await withCheckedThrowingContinuation { cont in
-            queue.async { cont.resume(with: Result { try work() }) }
-        }
-    }
-
-    func fetchHistory() async throws -> [PromptRecord] {
-        try await onQueue {
-            Array(self.loadAll().sorted { $0.created_at > $1.created_at }.prefix(50))
-        }
-    }
-
-    func fetchFolder(_ folder: String) async throws -> [PromptRecord] {
-        try await onQueue {
-            self.loadAll()
-                .filter { $0.folder == folder }
-                .sorted { $0.created_at > $1.created_at }
-        }
-    }
-
-    func fetchFolderNames() async throws -> [(name: String, count: Int)] {
-        try await onQueue {
-            var counts: [String: Int] = [:]
-            for r in self.loadAll() { if let f = r.folder { counts[f, default: 0] += 1 } }
-            return counts.map { (name: $0.key, count: $0.value) }.sorted { $0.name < $1.name }
-        }
-    }
-
-    func savePrompt(goal: String, role: String, tone: String, style: String,
-                    prompt: String, folder: String?) async throws {
-        try await onQueue {
-            var records = self.loadAll()
-            records.append(PromptRecord(
-                id: UUID().uuidString,
-                goal: goal,
-                role: role.isEmpty ? nil : role,
-                tone: tone.isEmpty ? nil : tone,
-                style: style.isEmpty ? nil : style,
-                generated_prompt: prompt,
-                folder: folder,
-                created_at: Self.iso.string(from: Date()),
-                used: false))
-            try self.writeAll(records)
-        }
-    }
-
-    func updateFolder(id: String, folder: String?) async throws {
-        try await onQueue {
-            var records = self.loadAll()
-            guard let idx = records.firstIndex(where: { $0.id == id }) else { return }
-            let r = records[idx]
-            records[idx] = PromptRecord(
-                id: r.id, goal: r.goal, role: r.role, tone: r.tone, style: r.style,
-                generated_prompt: r.generated_prompt, folder: folder,
-                created_at: r.created_at, used: r.used)
-            try self.writeAll(records)
-        }
-    }
-
-    func delete(id: String) async throws {
-        try await onQueue {
-            var records = self.loadAll()
-            records.removeAll { $0.id == id }
-            try self.writeAll(records)
-        }
     }
 
     /// Local records still waiting to sync. Does not touch the file.

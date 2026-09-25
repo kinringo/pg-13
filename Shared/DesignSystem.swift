@@ -81,6 +81,29 @@ struct FieldLabel: View {
     }
 }
 
+// MARK: - FormField
+
+/// A labelled form row, with an "optional" tag when the field can be left blank.
+struct FormField<Content: View>: View {
+    let label: String
+    var optional: Bool = false
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            HStack(spacing: 6) {
+                FieldLabel(text: label)
+                if optional {
+                    Text("optional")
+                        .font(QM.mono(8)).foregroundColor(QM.textMuted).tracking(0.5)
+                }
+            }
+            content()
+        }
+        .padding(.bottom, 12)
+    }
+}
+
 // MARK: - QMButton
 
 enum QMButtonStyle { case primary, ghost, danger, active }
@@ -168,9 +191,8 @@ struct TagToggle: View {
     }
 }
 
-// MARK: - FlowLayout (macOS 13+ / iOS 16+)
+// MARK: - FlowLayout
 
-@available(macOS 13.0, iOS 16.0, *)
 struct FlowLayout: Layout {
     var spacing: CGFloat = 6
 
@@ -220,14 +242,8 @@ struct TagFlow: View {
     @Binding var selected: String
 
     var body: some View {
-        if #available(macOS 13.0, iOS 16.0, *) {
-            FlowLayout(spacing: 5) {
-                ForEach(items, id: \.self) { TagToggle(label: $0, selected: $selected) }
-            }
-        } else {
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: 70))], spacing: 5) {
-                ForEach(items, id: \.self) { TagToggle(label: $0, selected: $selected) }
-            }
+        FlowLayout(spacing: 5) {
+            ForEach(items, id: \.self) { TagToggle(label: $0, selected: $selected) }
         }
     }
 }
