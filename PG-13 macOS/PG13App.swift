@@ -163,9 +163,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
 
     private func applyTheme(isLight: Bool, to panel: NSPanel) {
         panel.appearance = NSAppearance(named: isLight ? .aqua : .darkAqua)
-        panel.backgroundColor = isLight
-            ? NSColor(Color(hex: "FBF0E8"))
-            : NSColor(Color(hex: "0D0D0D"))
+        panel.backgroundColor = QM.nsBgBase(isLight: isLight)
     }
 
     func windowShouldClose(_ sender: NSWindow) -> Bool {

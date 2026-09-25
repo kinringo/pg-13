@@ -46,8 +46,12 @@ extension Color {
 // Dark  — inverted: near-black bg, light text, same teal/cyan accents
 
 enum QM {
-    static let bgBase     = Color.adaptive(light: "FBF0E8", dark: "0D0D0D")
-    static let bgElevated = Color.adaptive(light: "F5F5F5", dark: "141414")
+    // Hex pairs shared by the SwiftUI tokens and the platform colors below
+    private static let bgBaseHex     = (light: "FBF0E8", dark: "0D0D0D")
+    private static let bgElevatedHex = (light: "F5F5F5", dark: "141414")
+
+    static let bgBase     = Color.adaptive(light: bgBaseHex.light, dark: bgBaseHex.dark)
+    static let bgElevated = Color.adaptive(light: bgElevatedHex.light, dark: bgElevatedHex.dark)
     static let bgHover    = Color.adaptive(light: "EDE5DB", dark: "1A0A12")
 
     static let textPrimary   = Color.adaptive(light: "1D1538", dark: "EAEAEA")
@@ -67,6 +71,28 @@ enum QM {
     static let accentText = Color(hex: "1D1538")
 
     static func mono(_ size: CGFloat) -> Font { .system(size: size, design: .monospaced) }
+
+    // MARK: Platform colors
+    // For AppKit/UIKit APIs that take NSColor/UIColor instead of a SwiftUI Color.
+
+#if os(macOS)
+    /// Fixed (non-adaptive) bgBase for the app's current theme. The panel sets its
+    /// own appearance from the in-app toggle, so the caller picks the mode.
+    static func nsBgBase(isLight: Bool) -> NSColor {
+        NSColor(Color(hex: isLight ? bgBaseHex.light : bgBaseHex.dark))
+    }
+#endif
+
+#if os(iOS)
+    /// Dynamic bgElevated that resolves against the view's userInterfaceStyle.
+    static var uiBgElevated: UIColor {
+        UIColor { tc in
+            tc.userInterfaceStyle == .dark
+                ? UIColor(Color(hex: bgElevatedHex.dark))
+                : UIColor(Color(hex: bgElevatedHex.light))
+        }
+    }
+#endif
 }
 
 // MARK: - FieldLabel
