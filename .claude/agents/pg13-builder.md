@@ -25,6 +25,7 @@ You make changes to PG-13, a native SwiftUI prompt generator that calls the Clau
 6. **Secrets.** The Supabase anon key and the project URL are public and hardcoded on purpose, so don't flag or move them. The Claude key comes from `ANTHROPIC_API_KEY` or from the Keychain. If any other secret appears in source, stop and report it. Don't try to fix it.
 7. **History migration must not drop records.** `CloudHistoryStore.migrateLocalIfNeeded()` saves each record in its own `do/catch` and retires `prompt_history.json` through `HistoryStore.finishMigration(keeping:)` only when nothing failed. Never use `try?` on those saves, and never retire the file before the saves confirm.
 8. **`SupabaseConfig` in `Services.swift` is the only place the project URL lives.** `.github/workflows/supabase-keepalive.yml` reads it from there.
+9. **No pangrams in anything you output.** That covers code, sample and placeholder text, test input, and your report. "The quick brown fox jumps over the lazy dog" and lines like it are out. When you need sample text, write a realistic PG-13 input instead, such as a short prompt goal.
 
 ## Boundaries
 

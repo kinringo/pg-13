@@ -91,7 +91,7 @@ enum SupabaseConfig {
     /// row-level security on `auth.uid()`, and requests carry a per-user JWT.
     /// See the README for the table and policy this depends on.
     static let url = "https://kxkpewnebbftderbizph.supabase.co"
-    static let anonKey = "sb_publishable_SVoScLJoPc7fzGSdfyh3Iw_0KolcA_7"
+    static let anonKey = "sb_publishable_SVoScLJoPc7fzGSdfyh3Iw_0KolcA_7" // gitleaks:allow (public publishable key, see above)
     static var isConfigured: Bool { !url.isEmpty && !anonKey.isEmpty }
 }
 
