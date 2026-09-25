@@ -80,6 +80,8 @@ The Supabase anon key is still hardcoded, which is correct: it is the publishabl
 
 Fixed in both modes: `accentCyan` `00E5FF`, `borderTeal` `5FBFAE`, `accentText` `1D1538` (dark text on bright cyan buttons).
 
+Platform colors for AppKit/UIKit APIs, same hex as the tokens above: `QM.nsBgBase(isLight:)` (macOS, the panel background, picked from the in-app theme toggle) and `QM.uiBgElevated` (iOS, dynamic `UIColor` for the tab bar).
+
 `accentCyan` is now real cyan. The old doc's note that "accentCyan renders magenta, token name kept" is obsolete: magenta moved to its own `accentMagenta` token.
 
 Zero border-radius everywhere. No Circle shapes, no gradients. Font is `QM.mono(size)`, system monospaced.

@@ -17,15 +17,6 @@ struct PG13iOSApp: App {
 struct iOSContentView: View {
     @EnvironmentObject var appState: AppState
 
-    // Adaptive tab bar background
-    private var tabBarBg: UIColor {
-        UIColor { tc in
-            tc.userInterfaceStyle == .dark
-                ? UIColor(Color(hex: "141414"))
-                : UIColor(Color(hex: "F5F5F5"))
-        }
-    }
-
     var body: some View {
         TabView(selection: $appState.activeTab) {
 
@@ -87,7 +78,7 @@ struct iOSContentView: View {
     private func applyTabBarAppearance() {
         let appearance = UITabBarAppearance()
         appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = tabBarBg
+        appearance.backgroundColor = QM.uiBgElevated
         // Update global proxy
         UITabBar.appearance().standardAppearance = appearance
         UITabBar.appearance().scrollEdgeAppearance = appearance
