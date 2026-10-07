@@ -31,3 +31,6 @@ Archive/
 
 # Claude Code local machine state
 .claude/settings.local.json
+
+# Claude session notes, local only
+SESSION-HANDOFF.md
