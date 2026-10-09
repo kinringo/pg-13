@@ -86,7 +86,7 @@ Platform colors for AppKit/UIKit APIs, same hex as the tokens above: `QM.nsBgBas
 
 Zero border-radius everywhere. No Circle shapes, no gradients. Font is `QM.mono(size)`, system monospaced.
 
-This is the legacy Quiet Machinery system and it stays. Soft OS v2 is the web system only. Do not restyle the app to v2 without an explicit ask.
+This is the legacy Quiet Machinery system and it stays. The web uses the Ghost-Web tokens (Soft OS v2 retired 2026-09-25). Do not restyle the app without an explicit ask.
 
 ## Key UI components
 
