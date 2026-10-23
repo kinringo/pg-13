@@ -116,10 +116,11 @@ paused project has its subdomain withdrawn from DNS, so sign-in, sign-up, and
 history sync all fail at the transport layer. This happened on 2026-09-02 and
 looked like a broken Create Account button. `Net.supabase` now names it.
 
-Two pings stop it recurring, on purpose. They fail in different ways, so
-neither is a single point of failure.
+The GitHub Action keeps it awake; the launch agent watches for a pause. See
+"The request, and what is unproven" below for why one anonymous read was not
+enough.
 
-### 1. GitHub Action (primary)
+### 1. GitHub Action (keepalive)
 
 `.github/workflows/supabase-keepalive.yml`, every other day at 09:17 UTC, plus
 a manual `workflow_dispatch` button. Runs in the cloud, so it does not care
@@ -139,7 +140,7 @@ One caveat: GitHub disables scheduled workflows in repositories with no commits
 for 60 days, and emails the owner first. A commit, or the manual dispatch
 button, re-enables it.
 
-### 2. macOS launch agent (backup)
+### 2. macOS launch agent (alarm)
 
 Once a day, while this Mac is awake. Lives outside the repo, since it holds no
 secret worth versioning and is specific to this machine:
@@ -162,16 +163,33 @@ rm ~/Library/LaunchAgents/space.mariamaria.pg13-keepalive.plist
 
 ### The request, and what is unproven
 
-Both pings send the same thing: `select id limit 1` against `prompt_history`
-with the publishable key. Row-level security returns an empty array to an
-unauthenticated caller, which is the point. It counts as activity and proves
-RLS is working in the same request.
+The first design sent only `select id limit 1` against `prompt_history` with
+the publishable key, from both pings. That premise was wrong. The project
+paused on 2026-09-12 (local pings green through 09-11) and again on 2026-10-07
+(local ping green on 10-06 at 20:09, Action red from 10-07 on). An anonymous
+read that RLS answers with `[]` does not reset the idle clock.
 
-The premise, that an API request resets Supabase's idle clock, is their
-documented behaviour and has not been verified here across a full seven-day
-cycle. The Action history and the local log are the evidence. If the project
-pauses again despite green runs, the premise is wrong and the ping needs to be
-heavier, most likely an authenticated write.
+Since 2026-10-23 the Action makes two requests:
+
+1. The same anonymous read, kept as the RLS check. It must return `[]`.
+2. A password sign-in as a dedicated keepalive user, then an upsert of that
+   user's single row in `keepalive` (`supabase/keepalive.sql`). This is a real
+   authenticated write.
+
+Setup, once:
+
+- Run `supabase/keepalive.sql` in the SQL editor.
+- Create the keepalive user under Authentication, Users, with "Auto Confirm
+  User" on. It is not a person's account.
+- Add repo secrets `KEEPALIVE_EMAIL` and `KEEPALIVE_PASSWORD`.
+
+Still unproven: that an authenticated write resets the clock. It needs one full
+seven-day cycle of green runs with the project staying up. If it pauses again
+despite that, the free plan cannot be kept awake this way, and the options are
+the Pro plan or resuming by hand.
+
+The launch agent still sends only the anonymous read. It is an alarm now, not a
+keepalive: a `FAIL 000` line in its log means the project is paused.
 
 ## Known gotchas
 
