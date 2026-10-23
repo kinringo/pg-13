@@ -3,11 +3,17 @@
 #
 # Free Supabase projects pause after about a week without API activity. A
 # paused project has its subdomain withdrawn from DNS, so sign-in, sign-up, and
-# history sync fail at the transport layer with no useful error. One request
-# every couple of days resets that clock.
+# history sync fail at the transport layer with no useful error.
 #
-# The macOS launch agent does the same job, but only while that machine is
-# awake. This runs regardless.
+# An anonymous read was not enough: the project paused on 2026-09-12 and again
+# on 2026-10-07 while those reads returned 200. So the job now signs in as a
+# dedicated keepalive user and upserts one row into `keepalive`
+# (supabase/keepalive.sql), a real authenticated write.
+#
+# Needs two repo secrets: KEEPALIVE_EMAIL and KEEPALIVE_PASSWORD.
+#
+# The macOS launch agent still sends the anonymous read. It is an alarm now,
+# not a keepalive.
 
 name: Supabase keepalive
 
@@ -79,3 +85,51 @@ jobs:
           fi
 
           echo "Project awake. RLS returned no rows to an anonymous caller, as it should."
+
+      # The write that actually counts as activity. The password grant returns
+      # a user JWT; the upsert keys on that user's id, so there is only ever
+      # one row.
+      - name: Sign in and write the keepalive row
+        env:
+          KEEPALIVE_EMAIL: ${{ secrets.KEEPALIVE_EMAIL }}
+          KEEPALIVE_PASSWORD: ${{ secrets.KEEPALIVE_PASSWORD }}
+        run: |
+          set -euo pipefail
+          url="${{ steps.config.outputs.url }}"
+          key="${{ steps.config.outputs.key }}"
+
+          if [ -z "$KEEPALIVE_EMAIL" ] || [ -z "$KEEPALIVE_PASSWORD" ]; then
+            echo "::error::KEEPALIVE_EMAIL or KEEPALIVE_PASSWORD is not set. Add both as repo secrets."
+            exit 1
+          fi
+
+          auth=$(mktemp)
+          code=$(curl -sS -o "$auth" -w "%{http_code}" --max-time 30 \
+            --retry 3 --retry-delay 10 --retry-connrefused \
+            -H "apikey: $key" -H "Content-Type: application/json" \
+            -d "$(jq -n --arg e "$KEEPALIVE_EMAIL" --arg p "$KEEPALIVE_PASSWORD" '{email: $e, password: $p}')" \
+            "$url/auth/v1/token?grant_type=password")
+          if [ "$code" != "200" ]; then
+            echo "::error::Sign-in returned HTTP $code. Check the keepalive user exists and the secrets match it."
+            exit 1
+          fi
+
+          token=$(jq -r '.access_token' "$auth")
+          uid=$(jq -r '.user.id' "$auth")
+          echo "::add-mask::$token"
+
+          body=$(mktemp)
+          code=$(curl -sS -o "$body" -w "%{http_code}" --max-time 30 \
+            --retry 3 --retry-delay 10 --retry-connrefused \
+            -H "apikey: $key" \
+            -H "Authorization: Bearer $token" \
+            -H "Content-Type: application/json" \
+            -H "Prefer: resolution=merge-duplicates,return=minimal" \
+            -d "$(jq -n --arg u "$uid" '{user_id: $u, pinged_at: (now | todate)}')" \
+            "$url/rest/v1/keepalive?on_conflict=user_id")
+          if [ "$code" != "201" ] && [ "$code" != "200" ] && [ "$code" != "204" ]; then
+            echo "::error::Keepalive write returned HTTP $code: $(cat "$body"). Has supabase/keepalive.sql been run?"
+            exit 1
+          fi
+
+          echo "Keepalive row written as the signed-in user."
