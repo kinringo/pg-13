@@ -78,6 +78,10 @@ struct AuthGateView: View {
                 noticeMessage = ServiceError.emailConfirmationRequired.localizedDescription
                 isSignUp = false
                 password = ""
+            } catch ServiceError.accountAlreadyExists {
+                // Keep the password: the Sign In tap that follows can use it.
+                errorMessage = ServiceError.accountAlreadyExists.localizedDescription
+                isSignUp = false
             } catch {
                 errorMessage = error.localizedDescription
             }

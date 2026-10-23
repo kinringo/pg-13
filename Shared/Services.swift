@@ -153,8 +153,12 @@ class AuthService: ObservableObject {
         req.httpBody = try JSONEncoder().encode(body)
         let (data, response) = try await Net.supabase(req)
         if let http = response as? HTTPURLResponse, http.statusCode >= 300 {
-            struct AuthError: Codable { let msg: String?; let error_description: String?; let message: String? }
+            struct AuthError: Codable {
+                let msg: String?; let error_description: String?; let message: String?
+                let error_code: String?
+            }
             let e = try? JSONDecoder().decode(AuthError.self, from: data)
+            if e?.error_code == "email_not_confirmed" { throw ServiceError.emailNotConfirmed }
             throw ServiceError.httpError(http.statusCode,
                 e?.msg ?? e?.error_description ?? e?.message ?? "Authentication failed")
         }
@@ -183,6 +187,15 @@ class AuthService: ObservableObject {
         // is a successful sign-up, not a failure, but there is no session to
         // keep and signing in now would fail with "Invalid login credentials".
         guard let t = try? JSONDecoder().decode(TokenResponse.self, from: data) else {
+            // An email that is already registered gets the same 200, so the
+            // response cannot be used to probe for accounts. The tell is an
+            // empty `identities` list. Saying "Account created" there sent
+            // people to wait for an email that was never coming.
+            struct SignUpUser: Codable { struct Identity: Codable {}; let identities: [Identity]? }
+            if let u = try? JSONDecoder().decode(SignUpUser.self, from: data),
+               u.identities?.isEmpty == true {
+                throw ServiceError.accountAlreadyExists
+            }
             throw ServiceError.emailConfirmationRequired
         }
         persist(makeSession(t, fallbackEmail: email))
