@@ -26,15 +26,24 @@ class AppState: ObservableObject {
     static let shared = AppState()
     @Published var activeTab: Int = 0
     let generateVM = GenerateViewModel()
-    /// Docs owns a persisted draft, so it lives as long as the app rather than
-    /// being rebuilt each time the tab is shown.
-    let docVM = MarkdownDocViewModel()
+    let skillVM = SkillViewModel()
 
     private init() {
         KeychainHelper.migrateFromUserDefaults(
             udKey: "anthropic_api_key",
             keychainKey: "anthropic_api_key"
         )
+    }
+
+    /// Opens a saved record in the tab that made it, ready to refine.
+    func open(_ record: PromptRecord) {
+        if record.recordKind == .skill {
+            skillVM.populate(from: record)
+            activeTab = AppTab.skill.rawValue
+        } else {
+            generateVM.populate(from: record)
+            activeTab = AppTab.prompt.rawValue
+        }
     }
 
     @Published var lightMode: Bool = UserDefaults.standard.bool(forKey: "pg13Light") {
@@ -248,6 +257,140 @@ class GenerateViewModel: ObservableObject {
     }
 }
 
+// MARK: - SkillViewModel
+
+/// The SKILL tab: turns a name, a purpose and some rules into a SKILL.md file.
+class SkillViewModel: ObservableObject {
+    @Published var name: String = ""
+    @Published var purpose: String = ""
+    @Published var steps: String = ""
+    @Published var isGenerating = false
+    @Published var generated: String = ""
+    @Published var errorMessage: String = ""
+    @Published var version: Int = 0
+    @Published var isEditing = false
+    @Published var refineInput: String = ""
+    @Published var isRefining = false
+    @Published var savedMessage: String = ""
+    @Published var copyFlash = false
+    @Published var shareFlash = false
+
+    var hasResult: Bool { !generated.isEmpty }
+
+    func clear() {
+        name = ""; purpose = ""; steps = ""
+        generated = ""; errorMessage = ""; version = 0
+        isEditing = false; refineInput = ""; savedMessage = ""
+        copyFlash = false; shareFlash = false
+    }
+
+    func generate() {
+        guard !purpose.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Say what the skill does and when to use it."; return
+        }
+        guard ClaudeService.shared.getAPIKey() != nil else {
+            errorMessage = "Add your Anthropic API key on the Prompt tab, then try again."; return
+        }
+        errorMessage = ""; isGenerating = true
+        Task {
+            do {
+                let result = try await ClaudeService.shared.generate(
+                    systemPrompt: Self.systemPrompt, userMessage: userMessage, maxTokens: 1500)
+                await MainActor.run { self.generated = result; self.version += 1; self.isGenerating = false }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription; self.isGenerating = false }
+            }
+        }
+    }
+
+    func refine() {
+        guard !refineInput.trimmingCharacters(in: .whitespaces).isEmpty, hasResult else { return }
+        isRefining = true; errorMessage = ""
+        Task {
+            do {
+                let result = try await ClaudeService.shared.generate(
+                    systemPrompt: Self.refinePrompt,
+                    userMessage: "SKILL.md to revise:\n\(generated)\n\nRequested change:\n\(refineInput.capped(1000))",
+                    maxTokens: 1500)
+                await MainActor.run {
+                    self.generated = result; self.version += 1
+                    self.refineInput = ""; self.isRefining = false
+                }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription; self.isRefining = false }
+            }
+        }
+    }
+
+    func save(folder: String?) {
+        guard hasResult else { errorMessage = "Nothing to save yet."; return }
+        Task {
+            do {
+                try await CloudHistoryStore.shared.savePrompt(
+                    goal: displayName, role: purpose, tone: "", style: "",
+                    prompt: generated, folder: folder, kind: .skill)
+                await MainActor.run {
+                    self.savedMessage = folder != nil ? "Saved to \"\(folder!)\"" : "Saved"
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
+                }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
+    func copy() {
+        copyToPasteboard(generated)
+        copyFlash = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { self.copyFlash = false }
+    }
+
+    func share() {
+#if os(macOS)
+        copyToPasteboard(generated)
+#endif
+        shareFlash = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) { self.shareFlash = false }
+    }
+
+    func populate(from record: PromptRecord) {
+        name = record.goal; purpose = record.role ?? ""; steps = ""
+        generated = record.generated_prompt; version = 1; isEditing = false
+    }
+
+    /// The saved name: what was typed, or the `name:` line Claude wrote.
+    var displayName: String {
+        let typed = name.trimmingCharacters(in: .whitespaces)
+        if !typed.isEmpty { return typed }
+        for line in generated.split(separator: "\n") where line.hasPrefix("name:") {
+            return line.dropFirst(5).trimmingCharacters(in: .whitespaces)
+        }
+        return "untitled-skill"
+    }
+
+    var fileName: String { Markdown.fileName(for: displayName, prefix: "skill") }
+
+    private var userMessage: String {
+        var msg = "What it does and when to use it: \(purpose.capped(2000))"
+        if !name.isEmpty  { msg = "Skill name: \(name.capped(80))\n" + msg }
+        if !steps.isEmpty { msg += "\nSteps and rules: \(steps.capped(2000))" }
+        return msg
+    }
+
+    private static let systemPrompt = [
+        "Write a SKILL.md file for an AI agent. Return only the file, with no commentary before or after it.",
+        "Start with YAML frontmatter between two lines of three hyphens. It has exactly two keys: name, in lowercase kebab-case (use the given name if there is one, otherwise make a short one), and description, one or two sentences saying what the skill does and the requests that should trigger it.",
+        "After the frontmatter, write the instructions the agent follows: a numbered list of steps, then any rules or things to never do. Second-person imperative voice. No preamble, no hedge words.",
+        "Never use em dashes in the output. Use periods, commas, colons, or parentheses instead."
+    ].joined(separator: " ")
+
+    private static let refinePrompt = [
+        "Revise the SKILL.md below according to the requested change. Return only the revised file, with no commentary.",
+        "Keep the frontmatter format and everything the request did not ask you to change.",
+        "Never use em dashes in the output. Use periods, commas, colons, or parentheses instead."
+    ].joined(separator: " ")
+}
+
 // MARK: - HistoryViewModel
 
 class HistoryViewModel: ObservableObject {
@@ -319,6 +462,10 @@ class FoldersViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage = ""
     @Published var expandedIDs: Set<String> = []
+    @Published var folderInputID: String? = nil
+    @Published var folderInputText = ""
+
+    var folderNames: [String] { folders.map { $0.name } }
 
     func loadFolders() {
         isLoading = true; errorMessage = ""
@@ -349,15 +496,37 @@ class FoldersViewModel: ObservableObject {
         loadFolders()
     }
 
-    func removeFromFolder(_ record: PromptRecord) {
+    /// Files the record elsewhere, or out of every folder with nil. Either way
+    /// it leaves the folder that is open.
+    func setFolder(_ record: PromptRecord, folder: String?) {
         Task {
             do {
-                try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: nil)
+                try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
+                await MainActor.run {
+                    if folder != self.selectedFolder {
+                        self.folderRecords.removeAll { $0.id == record.id }
+                    }
+                    self.folderInputID = nil; self.folderInputText = ""
+                }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
+    func delete(_ record: PromptRecord) {
+        Task {
+            do {
+                try await CloudHistoryStore.shared.delete(id: record.id)
                 await MainActor.run { self.folderRecords.removeAll { $0.id == record.id } }
             } catch {
                 await MainActor.run { self.errorMessage = error.localizedDescription }
             }
         }
+    }
+
+    func toggleFolderInput(_ id: String) {
+        folderInputID = folderInputID == id ? nil : id
     }
 
     func toggleExpand(_ id: String) { expandedIDs.toggle(id) }

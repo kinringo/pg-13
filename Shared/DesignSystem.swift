@@ -52,7 +52,7 @@ enum QM {
 
     // MARK: Colors (Figma: Colors collection, Light / Dark)
 
-    private static let screenHex = (light: "80FBE7D2", dark: "17141F")
+    private static let screenHex = (light: "FDF3E8", dark: "17141F")
     private static let fieldHex  = (light: "F5F5F5",   dark: "1A1622")
 
     // background/*
@@ -68,14 +68,18 @@ enum QM {
     static let input             = Color.adaptive(light: "FFFFFF", dark: "2A2138")
     // action/*
     static let actionPrimary     = Color.adaptive(light: "991060", dark: "F03CAA")
-    static let actionSecondary   = Color.adaptive(light: "FFFFFF", dark: "2A2138")
+    static let actionPrimaryBackground = Color.adaptive(light: "5FBFAE", dark: "F03CAA")
+    static let actionSecondary   = Color.adaptive(light: "FDF3E8", dark: "2A2138")
+    /// Button/Large primary fill. Figma paints it with palette/plum-550 directly
+    /// (not through a semantic variable), so it has no dark value of its own.
+    static let buttonPrimary     = Color(hex: "7A5E8A")
     // text/*
     static let textPrimary       = Color.adaptive(light: "1D1538", dark: "F5F5F5")
     static let textSecondary     = Color.adaptive(light: "7A5E8A", dark: "C9A3FF")
     static let textNavActive     = Color(hex: "C9A3FF")
     static let textControl       = Color.adaptive(light: "3A0420", dark: "F5F5F5")
     static let textAction        = Color.adaptive(light: "991060", dark: "F5F5F5")
-    static let textOnAction      = Color.adaptive(light: "FFFFFF", dark: "F5F5F5")
+    static let textOnAction      = Color(hex: "FDF3E8")
     static let textAccentCoral   = Color(hex: "FF5C8A")
     static let textAccentTeal    = Color(hex: "5FBFAE")
     static let textTagType       = Color(hex: "00E5FF")
@@ -130,7 +134,8 @@ enum QM {
         static let md: CGFloat = 4
         static let window: CGFloat = 5
     }
-    static let stroke: CGFloat = 1
+    /// stroke/default. 0.5pt draws one device pixel on Retina screens.
+    static let stroke: CGFloat = 0.5
 
     // MARK: Typography (Figma text styles)
 
@@ -143,8 +148,6 @@ enum QM {
     static let labelSection   = Font.custom(jbBold, size: 14, relativeTo: .subheadline)
     /// Navigation/Tab: JetBrains Mono Medium 16
     static let navTab         = Font.custom(jbMedium, size: 16, relativeTo: .callout)
-    /// Navigation/Tab at 14pt, used only when five tabs don't fit at 16pt.
-    static let navTabCompact  = Font.custom(jbMedium, size: 14, relativeTo: .callout)
     /// Body/Prompt: JetBrains Mono Regular 14
     static let bodyPrompt     = Font.custom(jbRegular, size: 14, relativeTo: .subheadline)
     /// Label/Control: Space Mono Regular 12
@@ -174,7 +177,7 @@ enum QM {
     /// Fixed (non-adaptive) screen color for the app's current theme. The panel sets
     /// its own appearance from the in-app toggle, so the caller picks the mode.
     static func nsBgBase(isLight: Bool) -> NSColor {
-        NSColor(Color(hex: isLight ? "FDF3E9" : screenHex.dark))
+        NSColor(Color(hex: isLight ? screenHex.light : screenHex.dark))
     }
 #endif
 

@@ -204,6 +204,37 @@ class AuthService: ObservableObject {
 
     func signOut() { persist(nil) }
 
+    /// What `updateUser` changed. A new email waits on the confirmation link
+    /// Supabase sends, so it is not live until that link is clicked.
+    enum AccountChange { case password, emailPending, both }
+
+    /// Changes the signed-in user's email and/or password (PUT /auth/v1/user).
+    func updateUser(email newEmail: String?, password newPassword: String?) async throws -> AccountChange {
+        guard SupabaseConfig.isConfigured else { throw ServiceError.notConfigured }
+        let token = try await validAccessToken()
+        var body: [String: String] = [:]
+        if let newEmail { body["email"] = newEmail }
+        if let newPassword { body["password"] = newPassword }
+        var req = URLRequest(url: URL(string: "\(SupabaseConfig.url)/auth/v1/user")!)
+        req.httpMethod = "PUT"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(SupabaseConfig.anonKey, forHTTPHeaderField: "apikey")
+        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        req.httpBody = try JSONEncoder().encode(body)
+        let (data, response) = try await Net.supabase(req)
+        if let http = response as? HTTPURLResponse, http.statusCode >= 300 {
+            struct AuthError: Codable { let msg: String?; let message: String?; let error_description: String? }
+            let e = try? JSONDecoder().decode(AuthError.self, from: data)
+            throw ServiceError.httpError(http.statusCode,
+                e?.msg ?? e?.message ?? e?.error_description ?? "Update failed")
+        }
+        switch (newEmail != nil, newPassword != nil) {
+        case (true, true):  return .both
+        case (true, false): return .emailPending
+        default:            return .password
+        }
+    }
+
     /// The single in-flight refresh, if one is running. Supabase rotates refresh
     /// tokens on use, so two concurrent refreshes would invalidate each other and
     /// silently sign the user out. Callers share one Task instead.
@@ -321,18 +352,19 @@ class CloudHistoryStore {
     }
 
     func savePrompt(goal: String, role: String, tone: String, style: String,
-                    prompt: String, folder: String?) async throws {
+                    prompt: String, folder: String?, kind: RecordKind = .prompt) async throws {
         struct Body: Codable {
             let goal, generated_prompt: String
             let role, tone, style, folder: String?
             let used: Bool
+            let kind: RecordKind
         }
         let data = try JSONEncoder().encode(Body(
             goal: goal, generated_prompt: prompt,
             role: role.isEmpty ? nil : role,
             tone: tone.isEmpty ? nil : tone,
             style: style.isEmpty ? nil : style,
-            folder: folder, used: false))
+            folder: folder, used: false, kind: kind))
         let req = try await makeRequest(queryItems: [], method: "POST",
                                         body: data, prefer: "return=minimal")
         _ = try await run(req, "Save")
@@ -365,7 +397,7 @@ class CloudHistoryStore {
             do {
                 try await savePrompt(goal: r.goal, role: r.role ?? "", tone: r.tone ?? "",
                                     style: r.style ?? "", prompt: r.generated_prompt,
-                                    folder: r.folder)
+                                    folder: r.folder, kind: r.recordKind)
             } catch {
                 leftover.append(r)
             }

@@ -24,8 +24,18 @@ extension Color {
     }
 }
 
+// MARK: - RecordKind
+
+/// The `kind` column on prompt_history: what the SKILL or PROMPT tab generated.
+enum RecordKind: String, Codable {
+    case prompt, skill
+    var title: String { rawValue.uppercased() }
+}
+
 // MARK: - PromptRecord
 
+/// One saved row. For a skill, `goal` holds the skill name, `role` what it
+/// does and when to use it, and `generated_prompt` the SKILL.md text.
 struct PromptRecord: Codable, Identifiable {
     let id: String
     let goal: String
@@ -36,11 +46,15 @@ struct PromptRecord: Codable, Identifiable {
     let folder: String?
     let created_at: String
     let used: Bool?
+    /// Optional so rows read before the column existed still decode.
+    let kind: RecordKind?
+
+    var recordKind: RecordKind { kind ?? .prompt }
 
     func withFolder(_ folder: String?) -> PromptRecord {
         PromptRecord(id: id, goal: goal, role: role, tone: tone, style: style,
                      generated_prompt: generated_prompt, folder: folder,
-                     created_at: created_at, used: used)
+                     created_at: created_at, used: used, kind: kind)
     }
 
     var displayDate: String {
@@ -113,7 +127,7 @@ enum ServiceError: LocalizedError {
         case .httpError(let code, let msg): return "HTTP \(code): \(msg)"
         case .decodingError(let e):         return "Decode error: \(e.localizedDescription)"
         case .notConfigured:               return "Sync backend not configured."
-        case .notSignedIn:                 return "Sign in (History tab) to save and sync."
+        case .notSignedIn:                 return "Sign in on Profile to save and sync."
         case .emptyResponse:               return "Claude returned nothing. Try rewording the goal."
         case .exportFailed(let why):       return "Export failed. \(why)"
         case .emailConfirmationRequired:
