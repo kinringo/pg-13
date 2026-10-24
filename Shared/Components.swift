@@ -417,26 +417,54 @@ enum ResultAction: CaseIterable, Identifiable {
         case .delete: return "trash"
         }
     }
+    /// The label Button/Icon shows on hover (Type=With Label).
+    var title: String {
+        switch self {
+        case .copy:   return "Copy"
+        case .folder: return "Folder"
+        case .share:  return "Share"
+        case .save:   return "Save"
+        case .edit:   return "Edit"
+        case .delete: return "Delete"
+        }
+    }
 }
 
 struct IconButton: View {
     let symbol: String
+    /// Shown beside the icon on hover, as Figma's Type=With Label variant.
+    var title: String? = nil
     let accessibilityLabel: String
     var isActive: Bool = false
     let action: () -> Void
+    @State private var isHovered = false
 
     var body: some View {
         Button(action: action) {
-            Image(systemName: symbol)
-                .font(.system(size: 15, weight: .regular))
-                .foregroundColor(QM.iconDefault)
-                .frame(width: 32, height: 30)
-                .qmBox(fill: isActive ? QM.controlActive : QM.control,
-                       stroke: QM.borderAccentCoral, radius: 0)
-                .contentShape(Rectangle())
+            HStack(spacing: 0) {
+                Image(systemName: symbol)
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(QM.iconDefault)
+                    .frame(width: 24, height: 24)
+                if isHovered, let title {
+                    Text(title.uppercased())
+                        .font(QM.labelControl)
+                        .foregroundColor(QM.textControl)
+                        .lineLimit(1)
+                        .padding(.horizontal, QM.Space.s4)
+                }
+            }
+            .padding(.horizontal, QM.Space.s4)
+            .frame(minWidth: 32, minHeight: 30, maxHeight: 30)
+            .qmBox(fill: isActive ? QM.controlActive : QM.control,
+                   stroke: QM.borderAccentCoral, radius: 0)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(accessibilityLabel)
+#if os(macOS)
+        .onHover { isHovered = $0 }
+#endif
     }
 }
 
@@ -449,6 +477,7 @@ struct ResultToolbar: View {
             Spacer(minLength: 0)
             ForEach(items.indices, id: \.self) { i in
                 IconButton(symbol: items[i].action.symbol,
+                           title: items[i].action.title,
                            accessibilityLabel: items[i].label,
                            isActive: items[i].active,
                            action: items[i].run)
@@ -513,6 +542,8 @@ struct DropdownControl: View {
     let options: [String]
     @Binding var selection: String
     @State private var isOpen = false
+    @State private var hoveredOption: String? = nil
+    @State private var headerHovered = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -529,9 +560,13 @@ struct DropdownControl: View {
                 }
                 .padding(.horizontal, QM.Space.s8)
                 .padding(.vertical, QM.Space.s4)
+                .background(headerHovered && !isOpen ? QM.selected : Color.clear)
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+#if os(macOS)
+            .onHover { headerHovered = $0 }
+#endif
             .accessibilityValue(selection.isEmpty ? "None" : selection)
 
             if isOpen {
@@ -548,13 +583,17 @@ struct DropdownControl: View {
                                 Spacer()
                             }
                             .padding(QM.Space.s8)
-                            .background(selection == option ? QM.selected : Color.clear)
+                            .background(selection == option || hoveredOption == option
+                                        ? QM.selected : Color.clear)
                             .overlay(alignment: .bottom) {
                                 Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
                             }
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+#if os(macOS)
+                        .onHover { hoveredOption = $0 ? option : (hoveredOption == option ? nil : hoveredOption) }
+#endif
                         .accessibilityAddTraits(selection == option ? .isSelected : [])
                     }
                 }
