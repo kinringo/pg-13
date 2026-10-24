@@ -40,7 +40,7 @@ struct QMTextField: NSViewRepresentable {
         f.isBezeled = false
         f.drawsBackground = false
         f.focusRingType = .none
-        f.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        f.font = (NSFont(name: "JetBrainsMono-Regular", size: 14) ?? NSFont.monospacedSystemFont(ofSize: 14, weight: .regular))
         f.textColor = .labelColor          // adaptive: dark in light mode, light in dark
         f.maximumNumberOfLines = 1
         f.cell?.wraps = false
@@ -90,7 +90,7 @@ struct QMTextArea: NSViewRepresentable {
         tv.isSelectable = true
         tv.isRichText = false
         tv.allowsUndo = true
-        tv.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        tv.font = (NSFont(name: "JetBrainsMono-Regular", size: 14) ?? NSFont.monospacedSystemFont(ofSize: 14, weight: .regular))
         tv.textColor = .labelColor             // adaptive
         tv.insertionPointColor = NSColor(QM.accentCyan)
         tv.backgroundColor = .clear

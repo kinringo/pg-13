@@ -1,6 +1,11 @@
 // DesignSystem.swift — Shared (macOS + iOS)
+//
+// Tokens mirror the Figma file "prompt-generator" (dn6XnEybPsH7QQ71yZVxXe):
+// Colors (Light / Dark), Typography, and Spacing collections. Token names below
+// match the Figma variable names, so a variable maps to exactly one QM member.
 
 import SwiftUI
+import CoreText
 
 // MARK: - onChange shim (macOS 13 / iOS 16 vs macOS 14 / iOS 17+)
 
@@ -18,6 +23,7 @@ extension View {
 // MARK: - Adaptive Color
 
 extension Color {
+    /// Hex is RRGGBB, or AARRGGBB when the Figma token has alpha.
     static func adaptive(light: String, dark: String) -> Color {
 #if os(iOS)
         Color(UIColor { tc in
@@ -41,69 +47,170 @@ extension Color {
 }
 
 // MARK: - QM Design Tokens
-//
-// Light — SVG palette: cream bg, dark navy text, teal borders, magenta accents
-// Dark  — inverted: near-black bg, light text, same teal/cyan accents
 
 enum QM {
-    // Hex pairs shared by the SwiftUI tokens and the platform colors below
-    private static let bgBaseHex     = (light: "FBF0E8", dark: "0D0D0D")
-    private static let bgElevatedHex = (light: "F5F5F5", dark: "141414")
 
-    static let bgBase     = Color.adaptive(light: bgBaseHex.light, dark: bgBaseHex.dark)
-    static let bgElevated = Color.adaptive(light: bgElevatedHex.light, dark: bgElevatedHex.dark)
-    static let bgHover    = Color.adaptive(light: "EDE5DB", dark: "1A0A12")
+    // MARK: Colors (Figma: Colors collection, Light / Dark)
 
-    static let textPrimary   = Color.adaptive(light: "1D1538", dark: "EAEAEA")
-    static let textSecondary = Color.adaptive(light: "4A2840", dark: "8C8C8C")
-    static let textMuted     = Color.adaptive(light: "9B8898", dark: "4A4A4A")
+    private static let screenHex = (light: "80FBE7D2", dark: "17141F")
+    private static let fieldHex  = (light: "F5F5F5",   dark: "1A1622")
 
-    static let accentCyan    = Color(hex: "00E5FF")
-    static let accentMagenta = Color.adaptive(light: "991060", dark: "E535AB")
-    static let accentRed     = Color.adaptive(light: "CC2030", dark: "E63946")
+    // background/*
+    static let canvas            = Color.adaptive(light: "FFFFFF", dark: "0B0B0F")
+    static let screen            = Color.adaptive(light: screenHex.light, dark: screenHex.dark)
+    // surface/*
+    static let windowHeader      = Color.adaptive(light: "FBE7D2", dark: "2A2138")
+    static let field             = Color.adaptive(light: fieldHex.light, dark: fieldHex.dark)
+    static let control           = Color.adaptive(light: "0500E5FF", dark: "1A1622")
+    static let controlActive     = Color.adaptive(light: "3300E5FF", dark: "1A1622")
+    static let selected          = Color(hex: "3300E5FF")
+    static let badge             = Color(hex: "80F7D4C2")
+    static let input             = Color.adaptive(light: "FFFFFF", dark: "2A2138")
+    // action/*
+    static let actionPrimary     = Color.adaptive(light: "991060", dark: "F03CAA")
+    static let actionSecondary   = Color.adaptive(light: "FFFFFF", dark: "2A2138")
+    // text/*
+    static let textPrimary       = Color.adaptive(light: "1D1538", dark: "F5F5F5")
+    static let textSecondary     = Color.adaptive(light: "7A5E8A", dark: "C9A3FF")
+    static let textNavActive     = Color(hex: "C9A3FF")
+    static let textControl       = Color.adaptive(light: "3A0420", dark: "F5F5F5")
+    static let textAction        = Color.adaptive(light: "991060", dark: "F5F5F5")
+    static let textOnAction      = Color.adaptive(light: "FFFFFF", dark: "F5F5F5")
+    static let textAccentCoral   = Color(hex: "FF5C8A")
+    static let textAccentTeal    = Color(hex: "5FBFAE")
+    static let textTagType       = Color(hex: "00E5FF")
+    static let textInk           = Color(hex: "000000")
+    // border/*
+    static let borderWindow      = Color.adaptive(light: "80991060", dark: "2A2138")
+    static let borderHeader      = Color.adaptive(light: "80991060", dark: "3A2B47")
+    static let borderDivider     = Color.adaptive(light: "1D1538", dark: "3A2B47")
+    static let borderDividerStrong = Color.adaptive(light: "681ABB", dark: "3A2B47")
+    static let borderDefault     = Color(hex: "7A5E8A")
+    static let borderAccentTeal  = Color(hex: "5FBFAE")
+    static let borderAccentCoral = Color(hex: "FF5C8A")
+    static let borderInput       = Color.adaptive(light: "80991060", dark: "3A2B47")
+    static let borderActionSecondary = Color.adaptive(light: "80991060", dark: "FF5C8A")
+    // icon/*, status/*
+    static let iconDefault       = Color(hex: "5FBFAE")
+    static let iconMuted         = Color(hex: "7A5E8A")
+    static let windowClose       = Color(hex: "F03CAA")
+    static let windowMinimize    = Color(hex: "F0D020")
+    static let windowExpand      = Color(hex: "40D080")
+
+    // MARK: Legacy names
+    // Older views (Docs, Markdown, API key field) still use these. They now
+    // resolve to the Figma tokens so those views pick up the new look.
+
+    static let bgBase        = screen
+    static let bgElevated    = field
+    static let bgHover       = controlActive
+    static let textMuted     = iconMuted
+    static let accentCyan    = textAccentTeal
+    static let accentMagenta = actionPrimary
+    static let accentRed     = textAccentCoral
     static let accentAmber   = Color.adaptive(light: "A06800", dark: "F2A900")
+    static let border        = borderDefault
+    static let borderTeal    = borderAccentTeal
+    static let borderHot     = borderAccentCoral
+    static let accentText    = textOnAction
 
-    static let border        = Color.adaptive(light: "C8B8B0", dark: "2A2A2A")
-    static let borderTeal    = Color(hex: "5FBFAE")
-    static let borderHot     = Color.adaptive(light: "FF5C8A", dark: "E535AB")
+    // MARK: Spacing, radius, stroke (Figma: Spacing collection)
 
-    // Always dark — text on bright cyan buttons in both modes
-    static let accentText = Color(hex: "1D1538")
+    enum Space {
+        static let s2: CGFloat = 2
+        static let s4: CGFloat = 4
+        static let s8: CGFloat = 8
+        static let s10: CGFloat = 10
+        static let s12: CGFloat = 12
+        static let s16: CGFloat = 16
+        static let s20: CGFloat = 20
+    }
+    enum Radius {
+        static let sm: CGFloat = 2
+        static let md: CGFloat = 4
+        static let window: CGFloat = 5
+    }
+    static let stroke: CGFloat = 1
 
-    static func mono(_ size: CGFloat) -> Font { .system(size: size, design: .monospaced) }
+    // MARK: Typography (Figma text styles)
+
+    private static let jbRegular = "JetBrainsMono-Regular"
+    private static let jbMedium  = "JetBrainsMono-Medium"
+    private static let jbBold    = "JetBrainsMono-Bold"
+    private static let spaceMono = "SpaceMono-Regular"
+
+    /// Label/Section: JetBrains Mono Bold 14, tracking 1
+    static let labelSection   = Font.custom(jbBold, size: 14, relativeTo: .subheadline)
+    /// Navigation/Tab: JetBrains Mono Medium 16
+    static let navTab         = Font.custom(jbMedium, size: 16, relativeTo: .callout)
+    /// Navigation/Tab at 14pt, used only when five tabs don't fit at 16pt.
+    static let navTabCompact  = Font.custom(jbMedium, size: 14, relativeTo: .callout)
+    /// Body/Prompt: JetBrains Mono Regular 14
+    static let bodyPrompt     = Font.custom(jbRegular, size: 14, relativeTo: .subheadline)
+    /// Label/Control: Space Mono Regular 12
+    static let labelControl   = Font.custom(spaceMono, size: 12, relativeTo: .caption)
+    /// Heading/Screen: JetBrains Mono Regular 18
+    static let headingScreen  = Font.custom(jbRegular, size: 18, relativeTo: .title3)
+    /// Heading/Reference: JetBrains Mono Bold 20
+    static let headingReference = Font.custom(jbBold, size: 20, relativeTo: .title3)
+    /// Body/Reference: JetBrains Mono Regular 16
+    static let bodyReference  = Font.custom(jbRegular, size: 16, relativeTo: .callout)
+
+    /// Legacy size-based font, now JetBrains Mono.
+    static func mono(_ size: CGFloat) -> Font { .custom(jbRegular, size: size, relativeTo: .body) }
+
+    /// Registers the bundled fonts. Call once at launch, before any view draws.
+    static func registerFonts() {
+        for name in [jbRegular, jbMedium, jbBold, spaceMono] {
+            guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
+            CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
+        }
+    }
 
     // MARK: Platform colors
     // For AppKit/UIKit APIs that take NSColor/UIColor instead of a SwiftUI Color.
 
 #if os(macOS)
-    /// Fixed (non-adaptive) bgBase for the app's current theme. The panel sets its
-    /// own appearance from the in-app toggle, so the caller picks the mode.
+    /// Fixed (non-adaptive) screen color for the app's current theme. The panel sets
+    /// its own appearance from the in-app toggle, so the caller picks the mode.
     static func nsBgBase(isLight: Bool) -> NSColor {
-        NSColor(Color(hex: isLight ? bgBaseHex.light : bgBaseHex.dark))
+        NSColor(Color(hex: isLight ? "FDF3E9" : screenHex.dark))
     }
 #endif
 
 #if os(iOS)
-    /// Dynamic bgElevated that resolves against the view's userInterfaceStyle.
+    /// Dynamic field color that resolves against the view's userInterfaceStyle.
     static var uiBgElevated: UIColor {
         UIColor { tc in
             tc.userInterfaceStyle == .dark
-                ? UIColor(Color(hex: bgElevatedHex.dark))
-                : UIColor(Color(hex: bgElevatedHex.light))
+                ? UIColor(Color(hex: fieldHex.dark))
+                : UIColor(Color(hex: fieldHex.light))
         }
     }
 #endif
 }
 
-// MARK: - FieldLabel
+// MARK: - Bordered shape helper
+
+extension View {
+    /// Fill plus a 1pt inside stroke on a rounded rectangle, the box every
+    /// Figma control uses.
+    func qmBox(fill: Color, stroke: Color, radius: CGFloat = QM.Radius.sm) -> some View {
+        self
+            .background(RoundedRectangle(cornerRadius: radius).fill(fill))
+            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(stroke, lineWidth: QM.stroke))
+    }
+}
+
+// MARK: - FieldLabel (Label/Section)
 
 struct FieldLabel: View {
     let text: String
     var body: some View {
         Text(text.uppercased())
-            .font(QM.mono(9))
-            .foregroundColor(QM.textSecondary)
-            .tracking(1.5)
+            .font(QM.labelSection)
+            .tracking(1)
+            .foregroundColor(QM.textPrimary)
     }
 }
 
@@ -116,21 +223,20 @@ struct FormField<Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: QM.Space.s4) {
+            HStack(spacing: QM.Space.s8) {
                 FieldLabel(text: label)
                 if optional {
                     Text("optional")
-                        .font(QM.mono(8)).foregroundColor(QM.textMuted).tracking(0.5)
+                        .font(QM.labelControl).foregroundColor(QM.textSecondary)
                 }
             }
             content()
         }
-        .padding(.bottom, 12)
     }
 }
 
-// MARK: - QMButton
+// MARK: - QMButton (legacy API, Button/Small look)
 
 enum QMButtonStyle { case primary, ghost, danger, active }
 
@@ -145,27 +251,25 @@ struct QMButton: View {
 
     @State private var isHovered = false
 
-    var bgColor: Color {
+    private var fill: Color {
         switch style {
-        case .primary: return isHovered ? QM.accentCyan.opacity(0.85) : QM.accentCyan
-        case .ghost:   return isHovered ? QM.bgHover : QM.bgElevated
-        case .danger:  return isHovered ? QM.accentRed.opacity(0.85) : QM.accentRed
-        case .active:  return QM.accentMagenta.opacity(0.12)
+        case .primary: return QM.actionPrimary
+        case .active:  return QM.controlActive
+        default:       return isHovered ? QM.controlActive : QM.control
         }
     }
-    var fgColor: Color {
+    private var fg: Color {
         switch style {
-        case .primary: return QM.accentText
-        case .ghost:   return QM.textSecondary
-        case .danger:  return QM.textPrimary
-        case .active:  return QM.accentMagenta
+        case .primary: return QM.textOnAction
+        case .danger:  return QM.textAccentCoral
+        default:       return QM.textControl
         }
     }
-    var borderColor: Color {
+    private var stroke: Color {
         switch style {
-        case .ghost:  return QM.border
-        case .active: return QM.accentMagenta.opacity(0.4)
-        default:      return .clear
+        case .primary: return QM.actionPrimary
+        case .danger:  return QM.borderAccentCoral
+        default:       return QM.borderAccentTeal
         }
     }
 
@@ -173,21 +277,21 @@ struct QMButton: View {
         Button(action: action) {
             ZStack {
                 if isLoading {
-                    ProgressView().scaleEffect(0.6).tint(fgColor)
+                    ProgressView().scaleEffect(0.6).tint(fg)
                 } else {
-                    Text(label)
-                        .font(QM.mono(10))
-                        .foregroundColor(fgColor)
-                        .tracking(0.5)
+                    Text(label.uppercased())
+                        .font(QM.labelControl)
+                        .foregroundColor(fg)
+                        .lineLimit(1)
                 }
             }
             .frame(width: flexible ? nil : width, height: height)
-            .padding(.horizontal, (flexible || width != nil) ? 0 : 10)
+            .frame(maxWidth: flexible ? .infinity : nil)
+            .padding(.horizontal, (flexible || width != nil) ? 0 : QM.Space.s8)
+            .qmBox(fill: fill, stroke: stroke)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .frame(maxWidth: flexible ? .infinity : nil)
-        .background(bgColor)
-        .overlay(Rectangle().stroke(borderColor, lineWidth: 1))
 #if os(macOS)
         .onHover { isHovered = $0 }
 #endif
@@ -195,7 +299,7 @@ struct QMButton: View {
     }
 }
 
-// MARK: - TagToggle
+// MARK: - TagToggle (Tags chip)
 
 struct TagToggle: View {
     let label: String
@@ -204,14 +308,7 @@ struct TagToggle: View {
 
     var body: some View {
         Button(action: { selected = isOn ? "" : label }) {
-            Text(label)
-                .font(QM.mono(9))
-                .foregroundColor(isOn ? QM.accentCyan : QM.textSecondary)
-                .tracking(0.3)
-                .padding(.horizontal, 7)
-                .padding(.vertical, 3)
-                .background(isOn ? QM.accentCyan.opacity(0.10) : QM.bgElevated)
-                .overlay(Rectangle().stroke(isOn ? QM.borderTeal : QM.border, lineWidth: 1))
+            TagChip(text: label, isSelected: isOn)
         }
         .buttonStyle(.plain)
     }
@@ -268,7 +365,7 @@ struct TagFlow: View {
     @Binding var selected: String
 
     var body: some View {
-        FlowLayout(spacing: 5) {
+        FlowLayout(spacing: QM.Space.s4) {
             ForEach(items, id: \.self) { TagToggle(label: $0, selected: $selected) }
         }
     }
