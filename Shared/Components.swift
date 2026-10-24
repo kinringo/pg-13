@@ -7,32 +7,38 @@ import SwiftUI
 
 // MARK: - Window/Header
 
+/// The PG-13 bar. In Figma the window controls sit on this row. On macOS they are
+/// the panel's real traffic lights, drawn by AppKit over this bar (the panel uses
+/// a transparent, full-size-content title bar), so the bar leaves room for them.
+/// iOS has no window controls, so the bar carries only the PG-13 mark.
 struct WindowHeader: View {
     var body: some View {
         HStack {
-            HStack(spacing: QM.Space.s4) {
-                dot(QM.windowClose)
-                dot(QM.windowMinimize)
-                dot(QM.windowExpand)
-            }
             Spacer()
             Text("PG-13")
                 .font(QM.labelSection)
                 .foregroundColor(QM.iconDefault)
         }
-        .padding(.horizontal, QM.Space.s12)
-        .padding(.vertical, QM.Space.s2)
+#if os(macOS)
+        .padding(.leading, WindowHeader.trafficLightsWidth)
+        .frame(height: WindowHeader.titleBarHeight)
+#else
         .frame(height: 31)
+#endif
+        .padding(.horizontal, QM.Space.s12)
         .background(QM.windowHeader)
-        .overlay(Rectangle().strokeBorder(QM.borderHeader, lineWidth: QM.stroke))
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(QM.borderHeader).frame(height: QM.stroke)
+        }
         .accessibilityHidden(true)
     }
 
-    private func dot(_ fill: Color) -> some View {
-        Circle().fill(fill)
-            .overlay(Circle().strokeBorder(QM.borderWindow, lineWidth: QM.stroke))
-            .frame(width: 13, height: 13)
-    }
+#if os(macOS)
+    /// Height of an NSPanel title bar, so PG-13 centres on the traffic lights.
+    static let titleBarHeight: CGFloat = 28
+    /// Close, minimise and zoom buttons plus their left inset.
+    static let trafficLightsWidth: CGFloat = 60
+#endif
 }
 
 // MARK: - Navigation/Primary Tabs
