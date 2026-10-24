@@ -24,11 +24,11 @@ Design-and-Code/PG-13/
     Services.swift             ClaudeService, SupabaseConfig, AuthService, CloudHistoryStore, HistoryStore
     DesignSystem.swift         enum QM tokens (mirrors Figma), fonts, QMButton, FieldLabel, FormField
     Components.swift           one SwiftUI view per Figma component (header, tabs, fields, buttons, ...)
-    AppShell.swift             shared frame: header + tabs + screen; ProfileView (sign-in, theme)
+    AppShell.swift             shared frame: header + tabs + screen; ProfileView (sign-in, account edits, theme)
     PlatformFields.swift       QMTextField / QMTextArea wrappers
     KeychainHelper.swift       Keychain read/write + UserDefaults migration
     Models.swift               PromptRecord, shareText(), String.capped, ServiceError, Anthropic types
-    Markdown.swift             document builder, linter, MarkdownExporter, MarkdownDocViewModel, MarkdownPreview, DocsView
+    Markdown.swift             document builder, linter, MarkdownExporter; MarkdownDocViewModel and DocsView are unused since SKILL took the Docs tab
     GenerateView.swift
     HistoryViews.swift
     FolderViews.swift
@@ -41,9 +41,10 @@ Design-and-Code/PG-13/
 ## Architecture
 
 - **AppDelegate** (macOS only): `NSStatusBar` icon, creates the `NSPanel`, conforms to `NSWindowDelegate`.
-- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Docs, 2 History, 3 Folders, 4 Profile; slot 1 becomes Skill once built), `lightMode`, and the view models. Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
+- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Skill, 2 History, 3 Folders, 4 Profile), `lightMode`, and the view models (`generateVM`, `skillVM`). Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
 - **GenerateViewModel**: role, goal, extra info, tone and output-type selection, generate and refine, copy/share/save/edit state.
-- **MarkdownDocViewModel**: the Docs tab. Doc type, title, subject, audience, required sections, depth. Depth sets both the length rule in the system prompt and `maxTokens` (1200 / 2500 / 4000), so the two cannot drift apart. The draft autosaves to `UserDefaults` on an 800ms debounce, because the macOS panel dismisses whenever focus leaves it.
+- **SkillViewModel**: the Skill tab. Name, what it does / when to use, steps and rules go to Claude with a SKILL.md system prompt (frontmatter `name` and `description`, then numbered steps and rules, no em dashes). Saves with `kind = 'skill'`: `goal` holds the name, `role` the purpose, `generated_prompt` the file. Refine, copy, share, export and save-to-folder match the Prompt tab.
+- **MarkdownDocViewModel** (unused, kept for now): the old Docs tab. Doc type, title, subject, audience, required sections, depth. Depth sets both the length rule in the system prompt and `maxTokens` (1200 / 2500 / 4000), so the two cannot drift apart. The draft autosaves to `UserDefaults` on an 800ms debounce, because the macOS panel dismisses whenever focus leaves it.
 - **HistoryViewModel**: saved prompts, expand/collapse, folder assignment.
 - **Folder views**: folder list plus drill-in.
 
@@ -53,8 +54,8 @@ Design-and-Code/PG-13/
 
 - **ClaudeService**: model `claude-sonnet-5` (line 52), direct `URLSession` HTTP, `x-api-key` header, `anthropic-version: 2023-06-01`.
 - **SupabaseConfig**: `https://kxkpewnebbftderbizph.supabase.co` (line 93). Earlier docs named `lgbkozbwnilhsuvfpxnd` (post-auth project) and `mamflwiavkwybrsttwlr` (pre-auth). Neither is what ships now. The keepalive workflow reads this URL from source, so it follows a repoint automatically.
-- **AuthService**: Supabase Auth. Session stored in Keychain under `supabase_session`.
-- **CloudHistoryStore**: per-user rows with RLS.
+- **AuthService**: Supabase Auth. Session stored in Keychain under `supabase_session`. `updateUser` (PUT /auth/v1/user) changes the password at once; a new email waits on Supabase's confirmation link. No password reset yet: it needs Supabase auth email plus a page for the reset link.
+- **CloudHistoryStore**: per-user rows with RLS. `kind` ('prompt' or 'skill', default 'prompt') was added 2026-10-24 (`supabase/kind.sql`); older builds that never send it still save prompts.
 - **HistoryStore**: reads and retires the pre-sync `prompt_history.json`. It has no other API; it exists only for the one-time migration. Live save/load goes through the cloud store. Unsigned users can generate and export; Save on Generate fails until they sign in.
 
 ### Credential storage
@@ -67,7 +68,7 @@ The Supabase anon key is still hardcoded, which is correct: it is the publishabl
 
 `enum QM` in `Shared/DesignSystem.swift` mirrors the Figma file "prompt-generator" (`dn6XnEybPsH7QQ71yZVxXe`, page "21 · Global Components"). Each Figma variable maps to one `QM` member with the same name: `background/screen` → `QM.screen`, `text/nav-active` → `QM.textNavActive`, `border/accent-teal` → `QM.borderAccentTeal`, and so on. Light and dark values come from the Figma Light/Dark modes; hex with alpha is written AARRGGBB.
 
-- **Spacing / radius / stroke:** `QM.Space` (2, 4, 8, 10, 12, 16, 20), `QM.Radius` (sm 2, md 4, window 5), `QM.stroke` 1. Figma's Spacing collection.
+- **Spacing / radius / stroke:** `QM.Space` (2, 4, 8, 10, 12, 16, 20), `QM.Radius` (sm 2, md 4, window 5), `QM.stroke` 0.5 (stroke/default; one device pixel on Retina). Figma's Spacing collection.
 - **Type:** the Figma text styles, as `Font.custom(..., relativeTo:)` so they scale with Dynamic Type: `labelSection`, `navTab`, `bodyPrompt`, `labelControl`, `headingScreen`, `headingReference`, `bodyReference`. Fonts are bundled and registered at launch by `QM.registerFonts()`.
 - **Legacy names** (`bgBase`, `accentCyan`, `textMuted`, ...) alias the new tokens so older views (Docs, Markdown preview) pick up the new palette. New code uses the Figma names.
 
@@ -84,7 +85,7 @@ The Quiet Machinery look (zero radius, system mono, `#0D0D0D`/magenta) is retire
 
 - Red: hides the panel. `windowShouldClose` returns false, then `orderOut`. Back to the menu bar.
 - Yellow: default NSPanel miniaturize.
-- Green: `zoomPanel()` toggles 420x680 compact and 560x`min(screen height - 32, 880)` expanded. The old doc's 420x700 and 580x900 are both wrong.
+- Green: `zoomPanel()` toggles 500x600 compact (`AppDelegate.compactSize`, the Figma desktop frame) and 560x`min(screen height - 32, 880)` expanded. The whole frame is 500x600: the content runs under the title bar, so the frame is set directly, not the content rect.
 
 ## Deployment
 

@@ -1,6 +1,6 @@
 // HistoryViews.swift — Shared (macOS + iOS)
 //
-// Figma 02 (History), 03 (file to folder), 10 (signed out).
+// Figma desktop 04 (History) and 08 (signed out), mobile 03 (file to folder).
 // Sign-in lives on the Profile tab (AppShell.swift).
 
 import SwiftUI
@@ -18,7 +18,7 @@ struct HistoryView: View {
             if !auth.isSignedIn {
                 EmptyState(title: "Sign in to see saved prompts",
                            message: "Saved prompts live in your account. Sign in on Profile and they show up here on every device.",
-                           actionLabel: "Go to Profile") { appState.activeTab = AppTab.profile.rawValue }
+                           actionLabel: "Back to Sign In") { appState.activeTab = AppTab.profile.rawValue }
             } else {
                 if !vm.records.isEmpty { collectionBar }
                 signedInContent
@@ -32,6 +32,17 @@ struct HistoryView: View {
         .onAppear { if auth.isSignedIn { vm.load() } }
         .onChangeCompat(of: auth.isSignedIn) { signedIn in
             if signedIn { vm.load() }
+        }
+    }
+
+    /// Opens a saved record in the tab that made it, ready to refine.
+    private func use(_ record: PromptRecord) {
+        if record.recordKind == .skill {
+            appState.skillVM.populate(from: record)
+            appState.activeTab = AppTab.skill.rawValue
+        } else {
+            appState.generateVM.populate(from: record)
+            appState.activeTab = AppTab.prompt.rawValue
         }
     }
 
@@ -67,7 +78,7 @@ struct HistoryView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.records.isEmpty {
                 EmptyState(title: "No saved prompts yet",
-                           message: "Generate a prompt, then tap save. It shows up here.",
+                           message: "Generate a prompt or a skill, then tap save. It shows up here.",
                            actionLabel: "Go to Prompt") { appState.activeTab = AppTab.prompt.rawValue }
             } else {
 #if os(iOS)
@@ -84,11 +95,8 @@ struct HistoryView: View {
                             onToggle:         { vm.toggleExpand(record.id) },
                             onDelete:         { vm.delete(record) },
                             onSetFolder:      { vm.setFolder(record, folder: $0) },
-                            onShowFolderInput:{ vm.folderInputID = record.id },
-                            onUse: {
-                                appState.generateVM.populate(from: record)
-                                appState.activeTab = 0
-                            }
+                            onShowFolderInput:{ vm.folderInputID = vm.folderInputID == record.id ? nil : record.id },
+                            onUse: { use(record) }
                         )
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
@@ -119,11 +127,8 @@ struct HistoryView: View {
                                 onToggle:         { vm.toggleExpand(record.id) },
                                 onDelete:         { vm.delete(record) },
                                 onSetFolder:      { vm.setFolder(record, folder: $0) },
-                                onShowFolderInput:{ vm.folderInputID = record.id },
-                                onUse: {
-                                    appState.generateVM.populate(from: record)
-                                    appState.activeTab = 0
-                                }
+                                onShowFolderInput:{ vm.folderInputID = vm.folderInputID == record.id ? nil : record.id },
+                                onUse: { use(record) }
                             )
                             .contextMenu {
                                 Button(role: .destructive) { vm.delete(record) } label: {
@@ -167,8 +172,9 @@ struct HistoryItemView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: QM.Space.s10) {
             Button(action: onToggle) {
-                SavedItemHeader(title: record.goal, date: record.displayDate, tags: tags)
-                    .background(isHovered ? QM.selected : Color.clear)
+                SavedItemHeader(title: record.goal, date: record.displayDate,
+                                kind: record.recordKind, tags: tags, isExpanded: isExpanded)
+                    .background(isHovered && !isExpanded ? QM.selected : Color.clear)
             }
             .buttonStyle(.plain)
             .accessibilityHint(isExpanded ? "Collapses the prompt" : "Shows the full prompt")
@@ -177,13 +183,14 @@ struct HistoryItemView: View {
 #endif
 
             if isExpanded {
-                ResultTextArea(title: "Prompt", text: record.generated_prompt, maxHeight: 200)
+                PromptBox(text: record.generated_prompt, maxHeight: 200)
                 ResultToolbar(items: [
                     (.copy, "Copy", false, { copyToPasteboard(record.generated_prompt) }),
+                    // The folder icon toggles the picker, as in the Figma prototype.
                     (.folder, "Add to folder", showFolderInput, { onShowFolderInput() }),
                     (.share, shareFlash ? "Shared" : "Share", shareFlash, { sharePrompt() }),
                     (.save, "Export markdown", false, { exportMD() }),
-                    (.edit, "Edit in Prompt", false, { onUse() }),
+                    (.edit, record.recordKind == .skill ? "Edit in Skill" : "Edit in Prompt", false, { onUse() }),
                     (.delete, "Delete", false, { onDelete() }),
                 ])
                 if showFolderInput {
@@ -198,12 +205,11 @@ struct HistoryItemView: View {
                 }
             }
         }
-        .padding(.horizontal, QM.Space.s20)
         .padding(.vertical, QM.Space.s10)
         .overlay(alignment: .bottom) {
             Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
-                .padding(.horizontal, QM.Space.s20)
         }
+        .padding(.horizontal, QM.Space.s20)
 #if os(iOS)
         .sheet(isPresented: $showShareSheet) {
             ShareSheet(text: shareSheetText)

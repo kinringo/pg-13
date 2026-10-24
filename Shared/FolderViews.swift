@@ -1,7 +1,7 @@
 // FolderViews.swift — Shared (macOS + iOS)
 //
-// Figma 04 (browse folders), 05 (folder detail), 06 (no folders yet),
-// 08 (empty folder), 11 (signed out).
+// Figma desktop 05 (folders), 06 (open folder), 09 (signed out);
+// mobile 06 (no folders yet) and 08 (empty folder).
 
 import SwiftUI
 
@@ -18,7 +18,7 @@ struct FoldersView: View {
             if !auth.isSignedIn {
                 EmptyState(title: "Sign in to see folders",
                            message: "Folders live in your account. Sign in on Profile to see and organize them.",
-                           actionLabel: "Go to Profile") { appState.activeTab = AppTab.profile.rawValue }
+                           actionLabel: "Back to Sign In") { appState.activeTab = AppTab.profile.rawValue }
             } else if vm.selectedFolder != nil { drillView } else { folderListView }
         }
 #if os(iOS)
@@ -61,7 +61,7 @@ struct FoldersView: View {
     }
 
     var drillView: some View {
-        VStack(spacing: QM.Space.s10) {
+        VStack(spacing: QM.Space.s16) {
             BackBar(backLabel: "Folders",
                     title: vm.selectedFolder ?? "",
                     trailingLabel: vm.folderRecords.isEmpty ? nil : "MD",
@@ -120,8 +120,9 @@ struct FolderItemView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: QM.Space.s10) {
             Button(action: onToggle) {
-                SavedItemHeader(title: record.goal, date: record.displayDate, tags: tags)
-                    .background(isHovered ? QM.selected : Color.clear)
+                SavedItemHeader(title: record.goal, date: record.displayDate,
+                                kind: record.recordKind, tags: tags, isExpanded: isExpanded)
+                    .background(isHovered && !isExpanded ? QM.selected : Color.clear)
             }
             .buttonStyle(.plain)
 #if os(macOS)
@@ -129,7 +130,7 @@ struct FolderItemView: View {
 #endif
 
             if isExpanded {
-                ResultTextArea(title: "Prompt", text: record.generated_prompt, maxHeight: 200)
+                PromptBox(text: record.generated_prompt, maxHeight: 200)
                 ResultToolbar(items: [
                     (.copy, "Copy", false, { copyToPasteboard(record.generated_prompt) }),
                     // In a folder, the folder action takes the prompt out (it stays in History).
@@ -137,12 +138,11 @@ struct FolderItemView: View {
                 ])
             }
         }
-        .padding(.horizontal, QM.Space.s20)
         .padding(.vertical, QM.Space.s10)
         .overlay(alignment: .bottom) {
             Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
-                .padding(.horizontal, QM.Space.s20)
         }
+        .padding(.horizontal, QM.Space.s20)
     }
 
     private var tags: [String] {

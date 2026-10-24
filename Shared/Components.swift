@@ -43,14 +43,14 @@ struct WindowHeader: View {
 
 // MARK: - Navigation/Primary Tabs
 
-/// Tab order matches AppState.activeTab. Slot 1 is DOCS until SKILL is built.
+/// Tab order matches AppState.activeTab.
 enum AppTab: Int, CaseIterable, Identifiable {
-    case prompt = 0, docs, history, folders, profile
+    case prompt = 0, skill, history, folders, profile
     var id: Int { rawValue }
     var title: String {
         switch self {
         case .prompt:  return "PROMPT"
-        case .docs:    return "DOCS"
+        case .skill:   return "SKILL"
         case .history: return "HISTORY"
         case .folders: return "FOLDERS"
         case .profile: return "PROFILE"
@@ -58,41 +58,38 @@ enum AppTab: Int, CaseIterable, Identifiable {
     }
 }
 
+/// The active tab is Navigation/Tab (Medium 16, text/secondary) at its own width.
+/// The others are Regular 14 in text/nav-active and share the rest of the row.
 struct PrimaryTabs: View {
     @Binding var selection: Int
 
     var body: some View {
-        // Five tabs at Navigation/Tab 16pt need 390pt; a 360pt body falls back to 14pt.
-        ViewThatFits(in: .horizontal) {
-            tabs(font: QM.navTab)
-            tabs(font: QM.navTabCompact)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.top, QM.Space.s4)
-        .padding(.bottom, QM.Space.s8)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
-        }
-    }
-
-    private func tabs(font: Font) -> some View {
         HStack(spacing: 0) {
             ForEach(AppTab.allCases) { tab in
                 if tab != .prompt {
                     Rectangle().fill(QM.borderDefault).frame(width: QM.stroke, height: 21)
                 }
+                let isActive = selection == tab.rawValue
                 Button(action: { selection = tab.rawValue }) {
                     Text(tab.title)
-                        .font(font)
-                        .foregroundColor(selection == tab.rawValue ? QM.textNavActive : QM.textSecondary)
+                        .font(isActive ? QM.navTab : QM.bodyPrompt)
+                        .foregroundColor(isActive ? QM.textSecondary : QM.textNavActive)
                         .lineLimit(1)
                         .fixedSize()
                         .padding(.horizontal, QM.Space.s8)
+                        .frame(maxWidth: isActive ? nil : .infinity)
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .accessibilityAddTraits(selection == tab.rawValue ? .isSelected : [])
+                .layoutPriority(isActive ? 1 : 0)
+                .accessibilityAddTraits(isActive ? .isSelected : [])
             }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, QM.Space.s4)
+        .padding(.bottom, QM.Space.s8)
+        .overlay(alignment: .bottom) {
+            Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
         }
     }
 }
@@ -104,11 +101,13 @@ struct GeneratorField: View {
     let placeholder: String
     @Binding var text: String
     var multiline: Bool = false
+    var minHeight: CGFloat? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: QM.Space.s4) {
             FieldLabel(text: label)
-            FieldInput(placeholder: placeholder, text: $text, multiline: multiline)
+            FieldInput(placeholder: placeholder, text: $text, multiline: multiline,
+                       minHeight: minHeight)
         }
     }
 }
@@ -178,20 +177,30 @@ struct ResultTextArea: View {
                 Spacer()
                 if let v = version { CountBadge(text: "v\(v)") }
             }
-            ScrollView(.vertical, showsIndicators: true) {
-                Text(text)
-                    .font(QM.bodyPrompt)
-                    .foregroundColor(QM.textPrimary)
-                    .lineSpacing(3)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
-                    .padding(.leading, QM.Space.s4)
-                    .padding(.top, QM.Space.s4)
-                    .padding(.bottom, QM.Space.s8)
-            }
-            .frame(minHeight: 100, maxHeight: maxHeight)
-            .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: 0)
+            PromptBox(text: text, maxHeight: maxHeight)
         }
+    }
+}
+
+/// The read-only text box inside Form/Text Area (surface/field, teal outline).
+struct PromptBox: View {
+    let text: String
+    var maxHeight: CGFloat = 280
+
+    var body: some View {
+        ScrollView(.vertical, showsIndicators: true) {
+            Text(text)
+                .font(QM.bodyPrompt)
+                .foregroundColor(QM.textPrimary)
+                .lineSpacing(3)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .textSelection(.enabled)
+                .padding(.leading, QM.Space.s4)
+                .padding(.top, QM.Space.s4)
+                .padding(.bottom, QM.Space.s8)
+        }
+        .frame(minHeight: 100, maxHeight: maxHeight)
+        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: 0)
     }
 }
 
@@ -223,6 +232,7 @@ struct AuthField: View {
     let placeholder: String
     @Binding var text: String
     var secure: Bool = false
+    @State private var isHovered = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: QM.Space.s8) {
@@ -245,7 +255,12 @@ struct AuthField: View {
             .tint(QM.textAccentTeal)
             .padding(.vertical, QM.Space.s8)
             .padding(.horizontal, QM.Space.s10)
-            .qmBox(fill: QM.input, stroke: QM.borderInput, radius: QM.Radius.md)
+            // input-form: Input, and Input selected while the pointer is over it.
+            .qmBox(fill: isHovered ? QM.selected : QM.control, stroke: QM.borderInput,
+                   radius: QM.Radius.md)
+#if os(macOS)
+            .onHover { isHovered = $0 }
+#endif
         }
     }
 
@@ -273,8 +288,11 @@ struct FormMessage: View {
 // MARK: - Button/Small
 
 struct SmallButton: View {
-    /// Figma Button/Small styles. `control` is teal (CLEAR ALL); `label` is coral (REFINE, GENERATE).
-    enum Style { case control, label }
+    /// Figma Button/Small styles:
+    /// - `control`: teal box, Space Mono (Export MD, Export All MD).
+    /// - `label`: coral outline, JetBrains Mono 14 (REFINE, SAVE, BACK TO SIGN IN).
+    /// - `share`: coral outline, Space Mono (CLEAR ALL).
+    enum Style { case control, label, share }
 
     let label: String
     var style: Style = .control
@@ -285,12 +303,34 @@ struct SmallButton: View {
 
     @State private var isHovered = false
 
+    private var font: Font { style == .label ? QM.bodyPrompt : QM.labelControl }
+    private var textColor: Color {
+        switch style {
+        case .control: return QM.textControl
+        case .label:   return QM.textAccentCoral
+        case .share:   return isHovered ? QM.textAccentCoral : QM.textControl
+        }
+    }
+    private var fill: Color {
+        switch style {
+        case .control:        return isHovered ? QM.controlActive : QM.control
+        case .label, .share:  return isHovered ? QM.control : .clear
+        }
+    }
+    private var strokeColor: Color {
+        switch style {
+        case .control: return QM.borderAccentTeal
+        case .label:   return isHovered ? QM.borderAccentTeal : QM.borderAccentCoral
+        case .share:   return isHovered ? QM.borderDefault : QM.borderAccentCoral
+        }
+    }
+
     var body: some View {
         Button(action: action) {
             ZStack {
                 Text(label.uppercased())
-                    .font(QM.labelControl)
-                    .foregroundColor(style == .label ? QM.textAccentCoral : QM.textControl)
+                    .font(font)
+                    .foregroundColor(textColor)
                     .lineLimit(1)
                     .opacity(isLoading ? 0 : 1)
                 if isLoading { ProgressView().controlSize(.small).tint(QM.textAccentCoral) }
@@ -299,9 +339,7 @@ struct SmallButton: View {
             .padding(.vertical, QM.Space.s2)
             .frame(maxWidth: flexible ? .infinity : nil, minHeight: height ?? 22,
                    maxHeight: height)
-            .qmBox(fill: isHovered ? QM.controlActive : QM.control,
-                   stroke: style == .label ? QM.borderAccentCoral : QM.borderAccentTeal,
-                   radius: 0)
+            .qmBox(fill: fill, stroke: strokeColor, radius: 0)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -315,10 +353,15 @@ struct SmallButton: View {
 // MARK: - Button/Large
 
 struct LargeButton: View {
+    /// Figma Button/Large: `primary` is the filled plum button, `secondary` the
+    /// light one with an outline. A press shows the other look for a moment,
+    /// as the prototype does.
     enum Style { case primary, secondary }
 
     let label: String
     var style: Style = .primary
+    /// 40 on Profile, 32 when it shares a row with Button/Small (GENERATE).
+    var height: CGFloat = 40
     var isLoading: Bool = false
     let action: () -> Void
 
@@ -327,21 +370,34 @@ struct LargeButton: View {
             ZStack {
                 Text(label.uppercased())
                     .font(QM.navTab)
-                    .foregroundColor(style == .primary ? QM.textOnAction : QM.textAction)
+                    .lineLimit(1)
                     .opacity(isLoading ? 0 : 1)
                 if isLoading {
+                    // The system spinner follows the color scheme, not tint, on macOS:
+                    // a dark scheme draws it light enough to read on the plum fill.
                     ProgressView().controlSize(.small)
-                        .tint(style == .primary ? QM.textOnAction : QM.textAction)
+                        .environment(\.colorScheme, style == .primary ? .dark : .light)
                 }
             }
-            .frame(maxWidth: .infinity, minHeight: 40)
-            .qmBox(fill: style == .primary ? QM.actionPrimary : QM.actionSecondary,
-                   stroke: style == .primary ? QM.actionPrimary : QM.borderActionSecondary,
-                   radius: QM.Radius.md)
+            .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(LargeButtonStyle(style: style))
         .disabled(isLoading)
+    }
+}
+
+private struct LargeButtonStyle: ButtonStyle {
+    let style: LargeButton.Style
+
+    func makeBody(configuration: Configuration) -> some View {
+        let filled = (style == .primary) != configuration.isPressed
+        return configuration.label
+            .foregroundColor(filled ? QM.textOnAction : QM.textSecondary)
+            .tint(filled ? QM.textOnAction : QM.textSecondary)
+            .qmBox(fill: filled ? QM.buttonPrimary : QM.badge,
+                   stroke: filled ? QM.buttonPrimary : QM.borderActionSecondary,
+                   radius: QM.Radius.sm)
     }
 }
 
@@ -416,6 +472,22 @@ struct TagChip: View {
             .padding(.vertical, QM.Space.s2)
             .qmBox(fill: isSelected ? QM.controlActive : QM.control,
                    stroke: QM.borderAccentTeal)
+    }
+}
+
+/// Tags, Label and Type variants: the PROMPT / SKILL badge on a saved item.
+struct KindChip: View {
+    let kind: RecordKind
+
+    var body: some View {
+        Text(kind.title)
+            .font(QM.bodyPrompt)
+            .foregroundColor(kind == .skill ? QM.textOnAction : QM.textAction)
+            .lineLimit(1)
+            .padding(.horizontal, QM.Space.s8)
+            .padding(.vertical, QM.Space.s4)
+            .background(RoundedRectangle(cornerRadius: QM.Radius.sm)
+                .fill(kind == .skill ? QM.actionPrimaryBackground : QM.controlActive))
     }
 }
 
@@ -540,32 +612,56 @@ struct FolderRow: View {
 
 // MARK: - List/Saved Item (header)
 
+/// Collapsed: name and date, then the PROMPT / SKILL badge and a chevron down.
+/// Expanded: name and a chevron up, then the tone and style chips.
 struct SavedItemHeader: View {
     let title: String
     let date: String
+    let kind: RecordKind
     let tags: [String]
+    let isExpanded: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: QM.Space.s4) {
-            HStack(alignment: .firstTextBaseline, spacing: QM.Space.s4) {
+        VStack(alignment: .leading, spacing: QM.Space.s8) {
+            HStack(alignment: .center, spacing: QM.Space.s4) {
                 Text(title.uppercased())
                     .font(QM.labelSection)
                     .tracking(1)
                     .foregroundColor(QM.textPrimary)
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text(date.uppercased())
-                    .font(QM.labelControl)
-                    .foregroundColor(QM.textControl)
+                if isExpanded {
+                    chevron("chevron.up")
+                } else {
+                    Text(date.uppercased())
+                        .font(QM.labelControl)
+                        .foregroundColor(QM.textControl)
+                }
             }
-            if !tags.isEmpty {
+            if isExpanded {
+                if !tags.isEmpty {
+                    HStack(spacing: QM.Space.s4) {
+                        ForEach(tags, id: \.self) { TagChip(text: $0) }
+                    }
+                }
+            } else {
                 HStack(spacing: QM.Space.s4) {
-                    ForEach(tags, id: \.self) { TagChip(text: $0) }
+                    KindChip(kind: kind)
+                    Spacer(minLength: 0)
+                    chevron("chevron.down")
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+    }
+
+    private func chevron(_ symbol: String) -> some View {
+        Image(systemName: symbol)
+            .font(.system(size: 15, weight: .regular))
+            .foregroundColor(QM.iconDefault)
+            .frame(width: 24, height: 23)
+            .accessibilityHidden(true)
     }
 }
 
@@ -580,11 +676,10 @@ struct EmptyState: View {
     var body: some View {
         VStack(spacing: QM.Space.s12) {
             Image(systemName: "folder")
-                .font(.system(size: 20))
+                .font(.system(size: 30, weight: .light))
                 .foregroundColor(QM.iconDefault)
-                .frame(width: 72, height: 72)
-                .background(Circle().fill(QM.control))
-                .overlay(Circle().strokeBorder(QM.borderAccentTeal, lineWidth: QM.stroke))
+                .frame(width: 44, height: 44)
+                .accessibilityHidden(true)
             VStack(spacing: QM.Space.s8) {
                 Text(title.uppercased())
                     .font(QM.labelSection)
@@ -608,6 +703,7 @@ struct EmptyState: View {
 // MARK: - Navigation/Back Bar
 
 struct BackBar: View {
+    /// Read by VoiceOver for the chevron, e.g. "Back to Folders".
     let backLabel: String
     let title: String
     var trailingLabel: String? = nil
@@ -617,28 +713,30 @@ struct BackBar: View {
     var body: some View {
         HStack(spacing: QM.Space.s8) {
             Button(action: onBack) {
-                Text("< \(backLabel.uppercased())")
-                    .font(QM.labelControl)
-                    .foregroundColor(QM.textAccentTeal)
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundColor(QM.iconDefault)
+                    .frame(width: 24, height: 23)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-            Spacer()
+            .accessibilityLabel("Back to \(backLabel)")
             Text(title.uppercased())
-                .font(QM.labelSection)
-                .tracking(1)
+                .font(QM.navTab)
                 .foregroundColor(QM.textAction)
                 .lineLimit(1)
-            Spacer()
+                .frame(maxWidth: .infinity)
             if let trailingLabel, let onTrailing {
                 Button(action: onTrailing) {
                     Text(trailingLabel)
                         .font(QM.labelControl)
                         .foregroundColor(QM.textSecondary)
+                        .frame(minWidth: 24)
                 }
                 .buttonStyle(.plain)
             } else {
                 // Keeps the title centred when there is no trailing action.
-                Text("< \(backLabel.uppercased())").font(QM.labelControl).hidden()
+                Color.clear.frame(width: 24, height: 23)
             }
         }
         .frame(minHeight: 24)
@@ -647,13 +745,14 @@ struct BackBar: View {
 
 // MARK: - Screen title block (Heading/Screen + body)
 
+/// The Auth Header block on Profile: centred heading and subtitle.
 struct ScreenTitle: View {
     let title: String
     var subtitle: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: QM.Space.s4) {
-            Text(title)
+        VStack(spacing: QM.Space.s4) {
+            Text(title.uppercased())
                 .font(QM.headingScreen)
                 .foregroundColor(QM.textPrimary)
             if let subtitle {
@@ -663,6 +762,34 @@ struct ScreenTitle: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+    }
+}
+
+/// Centred text link (Forgot password?, Back to Sign In, Change Password).
+struct TextLink: View {
+    let label: String
+    var color: Color = QM.textSecondary
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Text(label)
+                .font(QM.bodyPrompt)
+                .foregroundColor(color)
+                .padding(QM.Space.s4)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// divider-frame: a hairline with 10 above and below.
+struct SectionDivider: View {
+    var body: some View {
+        Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
+            .padding(.vertical, QM.Space.s10)
     }
 }

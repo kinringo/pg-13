@@ -10,7 +10,7 @@ struct ContentView: View {
 
     var body: some View {
         AppShell()
-            .frame(minWidth: 380, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -20,6 +20,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     var statusItem: NSStatusItem?
     var panel: NSPanel?
     private var themeObserver: Any?
+
+    /// The Figma desktop frame size. Longer screens scroll inside it.
+    static let compactSize = NSSize(width: 500, height: 600)
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         QM.registerFonts()
@@ -39,11 +42,15 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 420, height: 680),
+            contentRect: NSRect(origin: .zero, size: Self.compactSize),
             styleMask: [.nonactivatingPanel, .fullSizeContentView, .titled, .closable, .miniaturizable],
             backing: .buffered,
             defer: false
         )
+        // The content view runs under the title bar, so size the whole frame,
+        // not the content rect, or the title bar adds 32pt on top.
+        panel.setContentSize(Self.compactSize)
+        panel.setFrame(NSRect(origin: .zero, size: Self.compactSize), display: false)
         panel.level = .normal
         panel.isMovableByWindowBackground = true
         panel.titleVisibility = .hidden
@@ -58,7 +65,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         }
 
         if let screenFrame = NSScreen.main?.visibleFrame {
-            panel.setFrameOrigin(NSPoint(x: screenFrame.maxX - 420 - 16, y: screenFrame.minY + 16))
+            panel.setFrameOrigin(NSPoint(x: screenFrame.maxX - Self.compactSize.width - 16,
+                                         y: screenFrame.minY + 16))
         }
 
         let appState = AppState.shared
@@ -98,9 +106,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     @objc func zoomPanel() {
         guard let panel = panel, let screen = NSScreen.main else { return }
         if isZoomed {
-            panel.setFrame(NSRect(x: screen.visibleFrame.maxX - 420 - 16,
+            panel.setFrame(NSRect(x: screen.visibleFrame.maxX - Self.compactSize.width - 16,
                                   y: screen.visibleFrame.minY + 16,
-                                  width: 420, height: 680), display: true, animate: true)
+                                  width: Self.compactSize.width, height: Self.compactSize.height),
+                           display: true, animate: true)
             isZoomed = false
         } else {
             let w: CGFloat = 560
