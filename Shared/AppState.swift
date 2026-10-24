@@ -35,6 +35,17 @@ class AppState: ObservableObject {
         )
     }
 
+    /// Opens a saved record in the tab that made it, ready to refine.
+    func open(_ record: PromptRecord) {
+        if record.recordKind == .skill {
+            skillVM.populate(from: record)
+            activeTab = AppTab.skill.rawValue
+        } else {
+            generateVM.populate(from: record)
+            activeTab = AppTab.prompt.rawValue
+        }
+    }
+
     @Published var lightMode: Bool = UserDefaults.standard.bool(forKey: "pg13Light") {
         didSet {
             UserDefaults.standard.set(lightMode, forKey: "pg13Light")
@@ -451,6 +462,10 @@ class FoldersViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage = ""
     @Published var expandedIDs: Set<String> = []
+    @Published var folderInputID: String? = nil
+    @Published var folderInputText = ""
+
+    var folderNames: [String] { folders.map { $0.name } }
 
     func loadFolders() {
         isLoading = true; errorMessage = ""
@@ -481,15 +496,37 @@ class FoldersViewModel: ObservableObject {
         loadFolders()
     }
 
-    func removeFromFolder(_ record: PromptRecord) {
+    /// Files the record elsewhere, or out of every folder with nil. Either way
+    /// it leaves the folder that is open.
+    func setFolder(_ record: PromptRecord, folder: String?) {
         Task {
             do {
-                try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: nil)
+                try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
+                await MainActor.run {
+                    if folder != self.selectedFolder {
+                        self.folderRecords.removeAll { $0.id == record.id }
+                    }
+                    self.folderInputID = nil; self.folderInputText = ""
+                }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
+    func delete(_ record: PromptRecord) {
+        Task {
+            do {
+                try await CloudHistoryStore.shared.delete(id: record.id)
                 await MainActor.run { self.folderRecords.removeAll { $0.id == record.id } }
             } catch {
                 await MainActor.run { self.errorMessage = error.localizedDescription }
             }
         }
+    }
+
+    func toggleFolderInput(_ id: String) {
+        folderInputID = folderInputID == id ? nil : id
     }
 
     func toggleExpand(_ id: String) { expandedIDs.toggle(id) }

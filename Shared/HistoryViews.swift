@@ -35,17 +35,6 @@ struct HistoryView: View {
         }
     }
 
-    /// Opens a saved record in the tab that made it, ready to refine.
-    private func use(_ record: PromptRecord) {
-        if record.recordKind == .skill {
-            appState.skillVM.populate(from: record)
-            appState.activeTab = AppTab.skill.rawValue
-        } else {
-            appState.generateVM.populate(from: record)
-            appState.activeTab = AppTab.prompt.rawValue
-        }
-    }
-
     /// Exports every loaded prompt as one markdown document with a table of contents.
     @ViewBuilder var collectionBar: some View {
         VStack(alignment: .leading, spacing: QM.Space.s4) {
@@ -96,7 +85,7 @@ struct HistoryView: View {
                             onDelete:         { vm.delete(record) },
                             onSetFolder:      { vm.setFolder(record, folder: $0) },
                             onShowFolderInput:{ vm.folderInputID = vm.folderInputID == record.id ? nil : record.id },
-                            onUse: { use(record) }
+                            onUse: { appState.open(record) }
                         )
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
@@ -128,7 +117,7 @@ struct HistoryView: View {
                                 onDelete:         { vm.delete(record) },
                                 onSetFolder:      { vm.setFolder(record, folder: $0) },
                                 onShowFolderInput:{ vm.folderInputID = vm.folderInputID == record.id ? nil : record.id },
-                                onUse: { use(record) }
+                                onUse: { appState.open(record) }
                             )
                             .contextMenu {
                                 Button(role: .destructive) { vm.delete(record) } label: {
@@ -157,6 +146,8 @@ struct HistoryItemView: View {
     let onSetFolder: (String?) -> Void
     let onShowFolderInput: () -> Void
     let onUse: () -> Void
+    /// Set inside an open folder: adds REMOVE beside SAVE in the folder picker.
+    var onRemoveFromFolder: (() -> Void)? = nil
 
     @State private var isHovered = false
     @State private var shareFlash = false
@@ -194,10 +185,16 @@ struct HistoryItemView: View {
                     (.delete, "Delete", false, { onDelete() }),
                 ])
                 if showFolderInput {
-                    InlineInput(placeholder: "Folder name...", text: $folderInputText,
-                                actionLabel: "Save") {
-                        guard !folderInputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
-                        onSetFolder(folderInputText)
+                    HStack(spacing: QM.Space.s8) {
+                        InlineInput(placeholder: "Folder name...", text: $folderInputText,
+                                    actionLabel: "Save") {
+                            guard !folderInputText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                            onSetFolder(folderInputText)
+                        }
+                        if let onRemoveFromFolder {
+                            SmallButton(label: "Remove", style: .label, height: InlineInput.height,
+                                        action: onRemoveFromFolder)
+                        }
                     }
                     if !filteredFolders.isEmpty {
                         FlowLayout(spacing: QM.Space.s4) { folderChips }

@@ -690,13 +690,14 @@ struct EmptyState: View {
                     .foregroundColor(QM.textSecondary)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
             }
             if let actionLabel, let action {
                 SmallButton(label: actionLabel, style: .label, action: action)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding(.horizontal, QM.Space.s20)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

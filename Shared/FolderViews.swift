@@ -94,60 +94,23 @@ struct FoldersView: View {
                 ScrollView {
                     VStack(spacing: 0) {
                         ForEach(vm.folderRecords) { record in
-                            FolderItemView(
+                            HistoryItemView(
                                 record: record,
                                 isExpanded: vm.expandedIDs.contains(record.id),
-                                onToggle: { vm.toggleExpand(record.id) },
-                                onRemove: { vm.removeFromFolder(record) }
+                                showFolderInput: vm.folderInputID == record.id,
+                                folderInputText: $vm.folderInputText,
+                                folderNames: vm.folderNames.filter { $0 != vm.selectedFolder },
+                                onToggle:          { vm.toggleExpand(record.id) },
+                                onDelete:          { vm.delete(record) },
+                                onSetFolder:       { vm.setFolder(record, folder: $0) },
+                                onShowFolderInput: { vm.toggleFolderInput(record.id) },
+                                onUse:             { appState.open(record) },
+                                onRemoveFromFolder: { vm.setFolder(record, folder: nil) }
                             )
                         }
                     }
                 }
             }
         }
-    }
-}
-
-// MARK: - FolderItemView (List/Saved Item inside a folder)
-
-struct FolderItemView: View {
-    let record: PromptRecord
-    let isExpanded: Bool
-    let onToggle: () -> Void
-    let onRemove: () -> Void
-    @State private var isHovered = false
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: QM.Space.s10) {
-            Button(action: onToggle) {
-                SavedItemHeader(title: record.goal, date: record.displayDate,
-                                kind: record.recordKind, tags: tags, isExpanded: isExpanded)
-                    .background(isHovered && !isExpanded ? QM.selected : Color.clear)
-            }
-            .buttonStyle(.plain)
-#if os(macOS)
-            .onHover { isHovered = $0 }
-#endif
-
-            if isExpanded {
-                PromptBox(text: record.generated_prompt, maxHeight: 200)
-                ResultToolbar(items: [
-                    (.copy, "Copy", false, { copyToPasteboard(record.generated_prompt) }),
-                    // In a folder, the folder action takes the prompt out (it stays in History).
-                    (.folder, "Remove from folder", false, { onRemove() }),
-                ])
-            }
-        }
-        .padding(.vertical, QM.Space.s10)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
-        }
-        .padding(.horizontal, QM.Space.s20)
-    }
-
-    private var tags: [String] {
-        [record.tone, record.style]
-            .compactMap { $0?.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
     }
 }
