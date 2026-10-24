@@ -21,6 +21,10 @@ struct AppShell: View {
         }
         .background(QM.screen)
         .background(QM.canvas)
+#if os(macOS)
+        // The header is the title bar: draw it under the traffic lights.
+        .ignoresSafeArea(.container, edges: .top)
+#endif
         .preferredColorScheme(appState.lightMode ? .light : .dark)
     }
 
