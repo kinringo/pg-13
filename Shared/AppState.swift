@@ -87,7 +87,7 @@ class GenerateViewModel: ObservableObject {
         }
         guard ClaudeService.shared.getAPIKey() != nil else {
             showAPIKeyField = true
-            errorMessage = "Enter your Anthropic API key below."
+            errorMessage = "Enter your Anthropic API key above, then tap SAVE."
             return
         }
         errorMessage = ""; isGenerating = true
@@ -99,7 +99,7 @@ class GenerateViewModel: ObservableObject {
                     maxTokens: maxTokensForRequest)
                 await MainActor.run { self.generatedPrompt = result; self.version += 1; self.isGenerating = false }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isGenerating = false }
+                await MainActor.run { self.handle(error); self.isGenerating = false }
             }
         }
     }
@@ -121,7 +121,7 @@ class GenerateViewModel: ObservableObject {
                     self.refineInput = ""; self.isRefining = false
                 }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isRefining = false }
+                await MainActor.run { self.handle(error); self.isRefining = false }
             }
         }
     }
@@ -169,8 +169,22 @@ class GenerateViewModel: ObservableObject {
     }
 
     func saveAPIKey() {
-        KeychainHelper.save(inlineAPIKey, key: "anthropic_api_key")
+        // Pasted keys often carry a trailing space or newline, which the API rejects with a 401.
+        let key = inlineAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { errorMessage = "Paste a key first, then tap SAVE."; return }
+        KeychainHelper.save(key, key: "anthropic_api_key")
         showAPIKeyField = false; inlineAPIKey = ""; errorMessage = ""
+    }
+
+    /// A rejected key (401) reopens the key field so it can be replaced.
+    /// Without this, a bad saved key left no way to enter a new one.
+    private func handle(_ error: Error) {
+        if case ServiceError.httpError(401, _) = error {
+            showAPIKeyField = true
+            errorMessage = "That API key was rejected. Paste a new key above, then tap SAVE."
+        } else {
+            errorMessage = error.localizedDescription
+        }
     }
 
     func populate(from record: PromptRecord) {
