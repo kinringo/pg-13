@@ -247,7 +247,16 @@ class CloudHistoryStore {
         guard SupabaseConfig.isConfigured else { throw ServiceError.notConfigured }
         let token = try await AuthService.shared.validAccessToken()
         var comps = URLComponents(string: "\(SupabaseConfig.url)/rest/v1/\(table)")!
-        if !queryItems.isEmpty { comps.queryItems = queryItems }
+        if !queryItems.isEmpty {
+            // URLComponents leaves & + = unescaped in values; encode them so a folder
+            // name like "Q&A" stays one value.
+            var allowed = CharacterSet.urlQueryAllowed
+            allowed.remove(charactersIn: "&+=#")
+            comps.percentEncodedQueryItems = queryItems.map {
+                URLQueryItem(name: $0.name,
+                             value: $0.value?.addingPercentEncoding(withAllowedCharacters: allowed))
+            }
+        }
         var req = URLRequest(url: comps.url!)
         req.httpMethod = method
         req.setValue("application/json",     forHTTPHeaderField: "Content-Type")
@@ -259,11 +268,11 @@ class CloudHistoryStore {
         return req
     }
 
-    /// PostgREST reads `,` `.` `(` `)` as filter syntax. Quoting the operand keeps
-    /// folder names like "Q4, drafts" from silently altering the query.
-    private func eq(_ value: String) -> String {
-        "eq.\"\(value.replacingOccurrences(of: "\"", with: "\\\""))\""
-    }
+    /// A plain `eq.` filter takes everything after the dot as the value, so commas
+    /// and dots in a folder name are safe. Wrapping the value in double quotes is
+    /// NOT: PostgREST keeps the quotes, so `eq."School"` matched nothing and
+    /// `eq."<uuid>"` failed as invalid uuid syntax.
+    private func eq(_ value: String) -> String { "eq.\(value)" }
 
     private func run(_ req: URLRequest, _ action: String) async throws -> Data {
         let (data, response) = try await Net.supabase(req)
