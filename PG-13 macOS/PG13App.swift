@@ -9,89 +9,8 @@ struct ContentView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        VStack(spacing: 0) {
-
-            // Compact header — PG-13 · tabs · theme toggle in one bar
-            HStack(spacing: 0) {
-                Text("PG·13")
-                    .font(QM.mono(10))
-                    .foregroundColor(QM.accentMagenta)
-                    .tracking(2)
-
-                Rectangle().fill(QM.border).frame(width: 1, height: 10)
-                    .padding(.horizontal, 10)
-
-                ForEach(Array(["Generate", "Docs", "History", "Folders"].enumerated()), id: \.offset) { idx, name in
-                    Button(action: { appState.activeTab = idx }) {
-                        VStack(spacing: 0) {
-                            Text(name.uppercased())
-                                .font(QM.mono(9))
-                                .foregroundColor(appState.activeTab == idx ? QM.accentCyan : QM.textMuted)
-                                .tracking(1.5)
-                                .padding(.vertical, 8)
-                                .padding(.horizontal, 10)
-                            Rectangle()
-                                .fill(appState.activeTab == idx ? QM.accentCyan : Color.clear)
-                                .frame(height: 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-
-                Spacer()
-
-                Button(action: { appState.lightMode.toggle() }) {
-                    Image(systemName: appState.lightMode ? "moon.fill" : "sun.max.fill")
-                        .font(.system(size: 10))
-                        .foregroundColor(QM.textMuted)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 22)
-            .background(QM.bgElevated)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(QM.border).frame(height: 1)
-            }
-
-            // Tab content
-            ZStack {
-                QM.bgBase.ignoresSafeArea()
-                Group {
-                    if appState.activeTab == 0 {
-                        GenerateView(vm: appState.generateVM)
-                    } else if appState.activeTab == 1 {
-                        DocsView(vm: appState.docVM)
-                    } else if appState.activeTab == 2 {
-                        HistoryView()
-                    } else {
-                        FoldersView()
-                    }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-            // Footer
-            Rectangle().fill(QM.border).frame(height: 1)
-            HStack {
-                Circle().fill(QM.accentCyan).frame(width: 5, height: 5)
-                Text("Claude · Sonnet 5")
-                    .font(QM.mono(9))
-                    .foregroundColor(QM.textMuted)
-                Spacer()
-                Text("PG·13")
-                    .font(QM.mono(9))
-                    .foregroundColor(QM.textMuted)
-                    .tracking(1)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 6)
-            .background(QM.bgElevated)
-        }
-        .background(QM.bgBase)
-        .frame(minWidth: 380, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity)
-        .preferredColorScheme(appState.lightMode ? .light : .dark)
+        AppShell()
+            .frame(minWidth: 380, maxWidth: .infinity, minHeight: 560, maxHeight: .infinity)
     }
 }
 
@@ -103,6 +22,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var themeObserver: Any?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        QM.registerFonts()
         NSApp.setActivationPolicy(.regular)
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)

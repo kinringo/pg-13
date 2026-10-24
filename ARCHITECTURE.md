@@ -22,7 +22,9 @@ Design-and-Code/PG-13/
   Shared/                      ← cross-platform, both targets
     AppState.swift             AppState + GenerateViewModel + HistoryViewModel
     Services.swift             ClaudeService, SupabaseConfig, AuthService, CloudHistoryStore, HistoryStore
-    DesignSystem.swift         enum QM tokens, QMButton, FieldLabel, FormField
+    DesignSystem.swift         enum QM tokens (mirrors Figma), fonts, QMButton, FieldLabel, FormField
+    Components.swift           one SwiftUI view per Figma component (header, tabs, fields, buttons, ...)
+    AppShell.swift             shared frame: header + tabs + screen; ProfileView (sign-in, theme)
     PlatformFields.swift       QMTextField / QMTextArea wrappers
     KeychainHelper.swift       Keychain read/write + UserDefaults migration
     Models.swift               PromptRecord, shareText(), String.capped, ServiceError, Anthropic types
@@ -33,12 +35,13 @@ Design-and-Code/PG-13/
   PG-13 macOS/
     PG13App.swift              macOS AppDelegate, NSPanel, stoplight buttons
   PG-13 iOS/PG13iOSApp.swift   iOS entry point
+  PG-13 iOS/Fonts, PG-13 macOS/Fonts   JetBrains Mono (Regular/Medium/Bold), Space Mono Regular
 ```
 
 ## Architecture
 
 - **AppDelegate** (macOS only): `NSStatusBar` icon, creates the `NSPanel`, conforms to `NSWindowDelegate`.
-- **AppState**: singleton `ObservableObject`. Holds `activeTab` (0 Generate, 1 Docs, 2 History, 3 Folders), `lightMode`, and the view models. Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
+- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Docs, 2 History, 3 Folders, 4 Profile; slot 1 becomes Skill once built), `lightMode`, and the view models. Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
 - **GenerateViewModel**: role, goal, extra info, tone and output-type selection, generate and refine, copy/share/save/edit state.
 - **MarkdownDocViewModel**: the Docs tab. Doc type, title, subject, audience, required sections, depth. Depth sets both the length rule in the system prompt and `maxTokens` (1200 / 2500 / 4000), so the two cannot drift apart. The draft autosaves to `UserDefaults` on an 800ms debounce, because the macOS panel dismisses whenever focus leaves it.
 - **HistoryViewModel**: saved prompts, expand/collapse, folder assignment.
@@ -62,31 +65,13 @@ The Supabase anon key is still hardcoded, which is correct: it is the publishabl
 
 ## Design tokens
 
-`enum QM` in `Shared/DesignSystem.swift`. The system is adaptive light/dark now, not the single dark palette the old doc described.
+`enum QM` in `Shared/DesignSystem.swift` mirrors the Figma file "prompt-generator" (`dn6XnEybPsH7QQ71yZVxXe`, page "21 · Global Components"). Each Figma variable maps to one `QM` member with the same name: `background/screen` → `QM.screen`, `text/nav-active` → `QM.textNavActive`, `border/accent-teal` → `QM.borderAccentTeal`, and so on. Light and dark values come from the Figma Light/Dark modes; hex with alpha is written AARRGGBB.
 
-| Token | Light | Dark |
-|---|---|---|
-| `bgBase` | `FBF0E8` | `0D0D0D` |
-| `bgElevated` | `F5F5F5` | `141414` |
-| `bgHover` | `EDE5DB` | `1A0A12` |
-| `textPrimary` | `1D1538` | `EAEAEA` |
-| `textSecondary` | `4A2840` | `8C8C8C` |
-| `textMuted` | `9B8898` | `4A4A4A` |
-| `border` | `C8B8B0` | `2A2A2A` |
-| `borderHot` | `FF5C8A` | `E535AB` |
-| `accentMagenta` | `991060` | `E535AB` |
-| `accentRed` | `CC2030` | `E63946` |
-| `accentAmber` | `A06800` | `F2A900` |
+- **Spacing / radius / stroke:** `QM.Space` (2, 4, 8, 10, 12, 16, 20), `QM.Radius` (sm 2, md 4, window 5), `QM.stroke` 1. Figma's Spacing collection.
+- **Type:** the Figma text styles, as `Font.custom(..., relativeTo:)` so they scale with Dynamic Type: `labelSection`, `navTab`, `bodyPrompt`, `labelControl`, `headingScreen`, `headingReference`, `bodyReference`. Fonts are bundled and registered at launch by `QM.registerFonts()`.
+- **Legacy names** (`bgBase`, `accentCyan`, `textMuted`, ...) alias the new tokens so older views (Docs, Markdown preview) pick up the new palette. New code uses the Figma names.
 
-Fixed in both modes: `accentCyan` `00E5FF`, `borderTeal` `5FBFAE`, `accentText` `1D1538` (dark text on bright cyan buttons).
-
-Platform colors for AppKit/UIKit APIs, same hex as the tokens above: `QM.nsBgBase(isLight:)` (macOS, the panel background, picked from the in-app theme toggle) and `QM.uiBgElevated` (iOS, dynamic `UIColor` for the tab bar).
-
-`accentCyan` is now real cyan. The old doc's note that "accentCyan renders magenta, token name kept" is obsolete: magenta moved to its own `accentMagenta` token.
-
-Zero border-radius everywhere. No Circle shapes, no gradients. Font is `QM.mono(size)`, system monospaced.
-
-This is the legacy Quiet Machinery system and it stays. The web uses the Ghost-Web tokens (Soft OS v2 retired 2026-09-25). Do not restyle the app without an explicit ask.
+The Quiet Machinery look (zero radius, system mono, `#0D0D0D`/magenta) is retired as of the 2026-10-23 redesign. Screens follow the Figma file.
 
 ## Key UI components
 
