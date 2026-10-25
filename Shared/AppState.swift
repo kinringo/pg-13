@@ -140,12 +140,12 @@ class GenerateViewModel: ObservableObject {
         Task {
             do {
                 let title = await ClaudeService.shared.suggestTitle(goal: goal, prompt: generatedPrompt)
-                try await CloudHistoryStore.shared.savePrompt(
+                let stored = try await CloudHistoryStore.shared.savePrompt(
                     goal: goal, role: role, tone: selectedTone,
                     style: selectedOutputType, prompt: generatedPrompt, folder: folder,
                     title: title)
                 await MainActor.run {
-                    self.savedMessage = folder != nil ? "Saved to \"\(folder!)\"" : "Saved"
+                    self.savedMessage = stored.map { "Saved to \"\($0)\"" } ?? "Saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
                 }
             } catch {
@@ -328,11 +328,11 @@ class SkillViewModel: ObservableObject {
         guard hasResult else { errorMessage = "Nothing to save yet."; return }
         Task {
             do {
-                try await CloudHistoryStore.shared.savePrompt(
+                let stored = try await CloudHistoryStore.shared.savePrompt(
                     goal: displayName, role: purpose, tone: "", style: "",
                     prompt: generated, folder: folder, kind: .skill)
                 await MainActor.run {
-                    self.savedMessage = folder != nil ? "Saved to \"\(folder!)\"" : "Saved"
+                    self.savedMessage = stored.map { "Saved to \"\($0)\"" } ?? "Saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
                 }
             } catch {
@@ -438,14 +438,15 @@ class HistoryViewModel: ObservableObject {
     func setFolder(_ record: PromptRecord, folder: String?) {
         Task {
             do {
-                try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
+                let stored = try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
                 await MainActor.run {
                     if let idx = self.records.firstIndex(where: { $0.id == record.id }) {
-                        self.records[idx] = self.records[idx].withFolder(folder)
+                        self.records[idx] = self.records[idx].withFolder(stored)
                     }
                     self.folderInputID = nil; self.folderInputText = ""
-                    if let f = folder, !self.folderNames.contains(f) {
-                        self.folderNames.append(f); self.folderNames.sort()
+                    if let f = stored, !self.folderNames.contains(f) {
+                        self.folderNames.append(f)
+                        self.folderNames.sort { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
                     }
                 }
             } catch {
@@ -503,9 +504,9 @@ class FoldersViewModel: ObservableObject {
     func setFolder(_ record: PromptRecord, folder: String?) {
         Task {
             do {
-                try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
+                let stored = try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
                 await MainActor.run {
-                    if folder != self.selectedFolder {
+                    if stored != self.selectedFolder {
                         self.folderRecords.removeAll { $0.id == record.id }
                     }
                     self.folderInputID = nil; self.folderInputText = ""

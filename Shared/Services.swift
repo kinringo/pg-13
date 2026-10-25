@@ -391,23 +391,48 @@ class CloudHistoryStore {
     }
 
     func fetchFolderNames() async throws -> [(name: String, count: Int)] {
-        let req = try await makeRequest(queryItems: [
-            URLQueryItem(name: "folder", value: "not.is.null"),
-            URLQueryItem(name: "select", value: "folder"),
-        ], method: "GET")
-        let data = try await run(req, "Load folders")
+        // Supabase returns at most 1,000 rows per request, so page through them;
+        // a single request undercounted folders once there were more filed items.
         struct Row: Codable { let folder: String? }
-        let rows = try JSONDecoder().decode([Row].self, from: data)
+        let page = 1000
         var counts: [String: Int] = [:]
-        for row in rows { if let f = row.folder { counts[f, default: 0] += 1 } }
-        return counts.map { (name: $0.key, count: $0.value) }.sorted { $0.name < $1.name }
+        var offset = 0
+        while true {
+            let req = try await makeRequest(queryItems: [
+                URLQueryItem(name: "folder", value: "not.is.null"),
+                URLQueryItem(name: "select", value: "folder"),
+                URLQueryItem(name: "order", value: "id"),
+                URLQueryItem(name: "limit", value: String(page)),
+                URLQueryItem(name: "offset", value: String(offset)),
+            ], method: "GET")
+            let rows = try JSONDecoder().decode([Row].self, from: try await run(req, "Load folders"))
+            for row in rows { if let f = row.folder { counts[f, default: 0] += 1 } }
+            if rows.count < page { break }
+            offset += page
+        }
+        return counts.map { (name: $0.key, count: $0.value) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
+    /// The folder name to store: trimmed, nil when empty, and spelled like an
+    /// existing folder that differs only in case, so "work " files into "Work"
+    /// instead of starting a second folder.
+    private func canonicalFolder(_ typed: String?) async throws -> String? {
+        guard let name = typed?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+            return nil
+        }
+        let existing = try await fetchFolderNames().map(\.name)
+        return existing.first { $0.caseInsensitiveCompare(name) == .orderedSame } ?? name
+    }
+
+    /// Returns the folder name actually stored (see `canonicalFolder`).
     /// `title` is left out of the request when nil, so saving still works
     /// against a table without the column.
+    @discardableResult
     func savePrompt(goal: String, role: String, tone: String, style: String,
                     prompt: String, folder: String?, kind: RecordKind = .prompt,
-                    title: String? = nil) async throws {
+                    title: String? = nil) async throws -> String? {
+        let folder = try await canonicalFolder(folder)
         struct Body: Codable {
             let goal, generated_prompt: String
             let role, tone, style, folder: String?
@@ -424,15 +449,20 @@ class CloudHistoryStore {
         let req = try await makeRequest(queryItems: [], method: "POST",
                                         body: data, prefer: "return=minimal")
         _ = try await run(req, "Save")
+        return folder
     }
 
-    func updateFolder(id: String, folder: String?) async throws {
+    /// Returns the folder name actually stored (see `canonicalFolder`).
+    @discardableResult
+    func updateFolder(id: String, folder: String?) async throws -> String? {
+        let folder = try await canonicalFolder(folder)
         struct Body: Codable { let folder: String? }
         let data = try JSONEncoder().encode(Body(folder: folder))
         let req = try await makeRequest(queryItems: [
             URLQueryItem(name: "id", value: eq(id)),
         ], method: "PATCH", body: data)
         _ = try await run(req, "Update")
+        return folder
     }
 
     func delete(id: String) async throws {
