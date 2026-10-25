@@ -67,11 +67,12 @@ enum QM {
     static let controlActive     = Color.adaptive(light: "3300E5FF", dark: "1A1622")
     static let selected          = Color(hex: "3300E5FF")
     static let badge             = Color(hex: "80F7D4C2")
-    static let input             = Color.adaptive(light: "FFFFFF", dark: "2A2138")
+    /// surface/badge-prompt and surface/badge-skill (Tags component, Prompt / Skill).
+    /// Same value in light and dark.
+    static let badgePrompt       = Color(hex: "7A5E8A")
+    static let badgeSkill        = Color(hex: "60CED8")
     // action/*
     static let actionPrimary     = Color.adaptive(light: "991060", dark: "F03CAA")
-    static let actionPrimaryBackground = Color.adaptive(light: "5FBFAE", dark: "F03CAA")
-    static let actionSecondary   = Color.adaptive(light: "FDF3E8", dark: "2A2138")
     /// Button/Large primary fill. Figma paints it with palette/plum-550 directly
     /// (not through a semantic variable), so it has no dark value of its own.
     static let buttonPrimary     = Color(hex: "7A5E8A")
@@ -84,7 +85,6 @@ enum QM {
     static let textOnAction      = Color(hex: "FDF3E8")
     static let textAccentCoral   = Color(hex: "FF5C8A")
     static let textAccentTeal    = Color(hex: "5FBFAE")
-    static let textTagType       = Color(hex: "00E5FF")
     static let textInk           = Color(hex: "000000")
     // border/*
     static let borderWindow      = Color.adaptive(light: "80991060", dark: "2A2138")
