@@ -293,12 +293,15 @@ struct FormMessage: View {
     enum Kind { case error, notice }
     let text: String
     let kind: Kind
+    /// Desktop 11 centers the message above VERIFY.
+    var centered = false
 
     var body: some View {
         Text(text)
             .font(QM.bodyPrompt)
             .foregroundColor(kind == .error ? QM.textAccentCoral : QM.textAccentTeal)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .multilineTextAlignment(centered ? .center : .leading)
+            .frame(maxWidth: .infinity, alignment: centered ? .center : .leading)
             .fixedSize(horizontal: false, vertical: true)
     }
 }

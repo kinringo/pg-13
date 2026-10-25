@@ -159,6 +159,8 @@ class AuthService: ObservableObject {
             }
             let e = try? JSONDecoder().decode(AuthError.self, from: data)
             if e?.error_code == "email_not_confirmed" { throw ServiceError.emailNotConfirmed }
+            // Supabase uses otp_expired for wrong codes as well as old ones.
+            if e?.error_code == "otp_expired" { throw ServiceError.codeInvalid }
             throw ServiceError.httpError(http.statusCode,
                 e?.msg ?? e?.error_description ?? e?.message ?? "Authentication failed")
         }
@@ -200,6 +202,21 @@ class AuthService: ObservableObject {
         }
         persist(makeSession(t, fallbackEmail: email))
         await CloudHistoryStore.shared.migrateLocalIfNeeded()
+    }
+
+    /// Confirms a new account with the 8-digit code from the sign-up email
+    /// (the "Confirm signup" template sends {{ .Token }}), then signs in.
+    func verifySignUpCode(email: String, code: String) async throws {
+        let t = try await authRequest(path: "verify",
+                                      body: ["type": "email", "email": email, "token": code])
+        persist(makeSession(t, fallbackEmail: email))
+        await CloudHistoryStore.shared.migrateLocalIfNeeded()
+    }
+
+    /// Sends a new sign-up code. Supabase rate-limits this (about once a minute)
+    /// and answers 429 with a message that says how long to wait.
+    func resendSignUpCode(email: String) async throws {
+        _ = try await authRequestData(path: "resend", body: ["type": "signup", "email": email])
     }
 
     func signOut() { persist(nil) }

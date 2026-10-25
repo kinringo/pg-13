@@ -48,16 +48,22 @@ struct ProfileView: View {
     /// Desktop 01: the first CREATE ACCOUNT tap switches to create mode, which
     /// hides SIGN IN and asks for details; the second tap creates the account.
     @State private var createMode = false
+    /// Desktop 11: set to the email that just signed up, while it waits for the
+    /// 8-digit code from the "Confirm signup" email.
+    @State private var codeEmail: String? = nil
+    @State private var code = ""
     @State private var working: Action? = nil
     @State private var errorMessage = ""
     @State private var noticeMessage = ""
 
-    private enum Action { case createAccount, signIn, update }
+    private enum Action { case createAccount, signIn, update, verify, resend }
 
     var body: some View {
         ScrollView {
             VStack(spacing: QM.Space.s16) {
-                if auth.isSignedIn { signedIn } else { signedOut }
+                if auth.isSignedIn { signedIn }
+                else if let codeEmail { confirmCode(email: codeEmail) }
+                else { signedOut }
                 themeToggle
             }
             .padding(.horizontal, QM.Space.s20)
@@ -67,6 +73,7 @@ struct ProfileView: View {
         .onChangeCompat(of: auth.isSignedIn) { signedIn in
             email = signedIn ? (auth.email ?? "") : ""
             password = ""; createMode = false; errorMessage = ""; noticeMessage = ""
+            codeEmail = nil; code = ""
         }
     }
 
@@ -76,6 +83,7 @@ struct ProfileView: View {
         ScreenTitle(title: "Create account / Sign in",
                     subtitle: "Enter your details to access your account")
         fields(passwordPlaceholder: "••••••••")
+        SectionDivider()
         VStack(spacing: QM.Space.s10) {
             if createMode {
                 Text("Enter your information above.")
@@ -101,6 +109,30 @@ struct ProfileView: View {
             }
         }
         // "Forgot password?" waits on a reset page and Supabase auth email (Parking Lot).
+    }
+
+    // MARK: Confirm code (11, 11b wrong code, 11c code resent)
+
+    @ViewBuilder private func confirmCode(email: String) -> some View {
+        ScreenTitle(title: "Confirm your email",
+                    subtitle: "We sent an 8-digit code to \(email)")
+        AuthField(label: "Code", placeholder: "12345678", text: $code)
+            .padding(.vertical, QM.Space.s16)
+        SectionDivider()
+        VStack(spacing: QM.Space.s10) {
+            if !errorMessage.isEmpty { FormMessage(text: errorMessage, kind: .error, centered: true) }
+            if !noticeMessage.isEmpty { FormMessage(text: noticeMessage, kind: .notice, centered: true) }
+            LargeButton(label: "Verify", style: .primary,
+                        isLoading: working == .verify) { verifyCode(email: email) }
+        }
+        .padding(.top, QM.Space.s8)
+        TextLink(label: working == .resend ? "Sending..." : "Resend code",
+                 color: QM.textAccentTeal) { resendCode(email: email) }
+            .disabled(working != nil)
+        TextLink(label: "Back to Sign In", color: QM.textAccentCoral) {
+            codeEmail = nil; code = ""; createMode = false
+            errorMessage = ""; noticeMessage = ""
+        }
     }
 
     // MARK: Signed in (07)
@@ -157,17 +189,73 @@ struct ProfileView: View {
                 password = ""
                 appState.activeTab = AppTab.prompt.rawValue
             } catch ServiceError.emailConfirmationRequired {
-                noticeMessage = ServiceError.emailConfirmationRequired.localizedDescription
-                password = ""; createMode = false
+                showCodeStep(for: e)
+            } catch ServiceError.emailNotConfirmed {
+                // Signed up earlier but never entered the code: send a fresh one.
+                showCodeStep(for: e)
+                try? await auth.resendSignUpCode(email: e)
             } catch ServiceError.accountAlreadyExists {
                 // Keep the password: the SIGN IN tap that follows can use it.
                 noticeMessage = ServiceError.accountAlreadyExists.localizedDescription
                 createMode = false
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = Self.message(for: error)
             }
             working = nil
         }
+    }
+
+    private func showCodeStep(for email: String) {
+        codeEmail = email; code = ""; password = ""; createMode = false
+        errorMessage = ""; noticeMessage = ""
+    }
+
+    private func verifyCode(email: String) {
+        // Supabase's Email OTP Length can be 6 to 10 digits; accept any of them.
+        let c = code.filter(\.isNumber)
+        guard (6...10).contains(c.count) else {
+            errorMessage = "Enter the code from your email."; noticeMessage = ""; return
+        }
+        working = .verify; errorMessage = ""; noticeMessage = ""
+        Task { @MainActor in
+            do {
+                try await auth.verifySignUpCode(email: email, code: c)
+                appState.activeTab = AppTab.prompt.rawValue
+            } catch {
+                errorMessage = Self.message(for: error)
+            }
+            working = nil
+        }
+    }
+
+    private func resendCode(email: String) {
+        working = .resend; errorMessage = ""; noticeMessage = ""
+        Task { @MainActor in
+            do {
+                try await auth.resendSignUpCode(email: email)
+                code = ""
+                noticeMessage = "New code sent. Check your email."
+            } catch {
+                errorMessage = Self.message(for: error)
+            }
+            working = nil
+        }
+    }
+
+    /// Supabase auth errors read as plain sentences, as in the Figma error frame
+    /// ("Invalid login credentials."), without the "HTTP 400:" prefix.
+    private static func message(for error: Error) -> String {
+        guard case ServiceError.httpError(_, let msg) = error else {
+            return error.localizedDescription
+        }
+        // Supabase lists every allowed character; say the rule instead.
+        if msg.hasPrefix("Password should contain at least one character of each") {
+            return "Use at least one lowercase letter, one uppercase letter and one number."
+        }
+        if msg == "Error sending confirmation email" {
+            return "We couldn't send the code email. Try again in a minute."
+        }
+        return msg.hasSuffix(".") ? msg : msg + "."
     }
 
     /// Saves a new password, a new email, or both. An unchanged email is skipped.
@@ -194,7 +282,7 @@ struct ProfileView: View {
                 }
                 password = ""
             } catch {
-                errorMessage = error.localizedDescription
+                errorMessage = Self.message(for: error)
             }
             working = nil
         }
