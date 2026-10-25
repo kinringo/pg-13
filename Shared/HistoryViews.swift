@@ -168,7 +168,7 @@ struct HistoryItemView: View {
         VStack(alignment: .leading, spacing: QM.Space.s10) {
             HStack(spacing: QM.Space.s16) {
                 Button(action: onToggle) {
-                    SavedItemHeader(title: record.goal, kind: record.recordKind,
+                    SavedItemHeader(title: record.displayTitle, kind: record.recordKind,
                                     tags: tags, isExpanded: isExpanded)
                 }
                 .buttonStyle(.plain)

@@ -81,6 +81,19 @@ class ClaudeService {
         guard !text.isEmpty else { throw ServiceError.emptyResponse }
         return text
     }
+
+    /// A 2 to 5 word title for the Saved list. Returns nil on any failure so a
+    /// missing title never blocks a save; the list then shows the goal.
+    func suggestTitle(goal: String, prompt: String) async -> String? {
+        let system = "You name saved prompts. Reply with a title of 2 to 5 words that says what the prompt is for. Title only: no quotes, no punctuation at the end, no em dashes."
+        let message = "Goal: \(goal.capped(500))\n\nPrompt:\n\(prompt.capped(2000))"
+        guard let raw = try? await generate(systemPrompt: system, userMessage: message, maxTokens: 30)
+        else { return nil }
+        let title = raw.split(separator: "\n").first.map(String.init)?
+            .trimmingCharacters(in: CharacterSet(charactersIn: "\"'“”‘’.").union(.whitespaces)) ?? ""
+        guard !title.isEmpty, title.count <= 60 else { return nil }
+        return title
+    }
 }
 
 // MARK: - Supabase configuration
@@ -390,20 +403,24 @@ class CloudHistoryStore {
         return counts.map { (name: $0.key, count: $0.value) }.sorted { $0.name < $1.name }
     }
 
+    /// `title` is left out of the request when nil, so saving still works
+    /// against a table without the column.
     func savePrompt(goal: String, role: String, tone: String, style: String,
-                    prompt: String, folder: String?, kind: RecordKind = .prompt) async throws {
+                    prompt: String, folder: String?, kind: RecordKind = .prompt,
+                    title: String? = nil) async throws {
         struct Body: Codable {
             let goal, generated_prompt: String
             let role, tone, style, folder: String?
             let used: Bool
             let kind: RecordKind
+            let title: String?
         }
         let data = try JSONEncoder().encode(Body(
             goal: goal, generated_prompt: prompt,
             role: role.isEmpty ? nil : role,
             tone: tone.isEmpty ? nil : tone,
             style: style.isEmpty ? nil : style,
-            folder: folder, used: false, kind: kind))
+            folder: folder, used: false, kind: kind, title: title))
         let req = try await makeRequest(queryItems: [], method: "POST",
                                         body: data, prefer: "return=minimal")
         _ = try await run(req, "Save")

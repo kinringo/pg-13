@@ -48,13 +48,21 @@ struct PromptRecord: Codable, Identifiable {
     let used: Bool?
     /// Optional so rows read before the column existed still decode.
     let kind: RecordKind?
+    /// Claude's short title (supabase/title.sql). Nil on rows saved before it
+    /// existed, by older builds, or when the title call failed.
+    var title: String? = nil
 
     var recordKind: RecordKind { kind ?? .prompt }
+    /// What the Saved list shows: the short title, else the goal.
+    var displayTitle: String {
+        let t = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return t.isEmpty ? goal : t
+    }
 
     func withFolder(_ folder: String?) -> PromptRecord {
         PromptRecord(id: id, goal: goal, role: role, tone: tone, style: style,
                      generated_prompt: generated_prompt, folder: folder,
-                     created_at: created_at, used: used, kind: kind)
+                     created_at: created_at, used: used, kind: kind, title: title)
     }
 
     var displayDate: String {
