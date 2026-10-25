@@ -219,6 +219,23 @@ class AuthService: ObservableObject {
         _ = try await authRequestData(path: "resend", body: ["type": "signup", "email": email])
     }
 
+    /// Emails an 8-digit password reset code (the "Reset Password" template
+    /// sends {{ .Token }}). Supabase answers 200 even for unknown emails.
+    func sendPasswordResetCode(email: String) async throws {
+        _ = try await authRequestData(path: "recover", body: ["email": email])
+    }
+
+    /// Checks the reset code, saves the new password, then signs in. The
+    /// session is kept only once the password is saved, so a rejected password
+    /// does not leave the person signed in with the old one.
+    func resetPassword(email: String, code: String, newPassword: String) async throws {
+        let t = try await authRequest(path: "verify",
+                                      body: ["type": "recovery", "email": email, "token": code])
+        try await putUser(token: t.access_token, body: ["password": newPassword])
+        persist(makeSession(t, fallbackEmail: email))
+        await CloudHistoryStore.shared.migrateLocalIfNeeded()
+    }
+
     func signOut() { persist(nil) }
 
     /// What `updateUser` changed. A new email waits on the confirmation link
@@ -232,6 +249,16 @@ class AuthService: ObservableObject {
         var body: [String: String] = [:]
         if let newEmail { body["email"] = newEmail }
         if let newPassword { body["password"] = newPassword }
+        try await putUser(token: token, body: body)
+        switch (newEmail != nil, newPassword != nil) {
+        case (true, true):  return .both
+        case (true, false): return .emailPending
+        default:            return .password
+        }
+    }
+
+    /// PUT /auth/v1/user with the given access token.
+    private func putUser(token: String, body: [String: String]) async throws {
         var req = URLRequest(url: URL(string: "\(SupabaseConfig.url)/auth/v1/user")!)
         req.httpMethod = "PUT"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -244,11 +271,6 @@ class AuthService: ObservableObject {
             let e = try? JSONDecoder().decode(AuthError.self, from: data)
             throw ServiceError.httpError(http.statusCode,
                 e?.msg ?? e?.message ?? e?.error_description ?? "Update failed")
-        }
-        switch (newEmail != nil, newPassword != nil) {
-        case (true, true):  return .both
-        case (true, false): return .emailPending
-        default:            return .password
         }
     }
 
