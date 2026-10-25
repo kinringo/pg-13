@@ -43,11 +43,12 @@ struct FoldersView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.folders.isEmpty {
                 EmptyState(title: "No folders yet",
-                           message: "Open a prompt in History and tap the folder button to file it. The folder appears here.",
-                           actionLabel: "Go to History") { appState.activeTab = AppTab.history.rawValue }
+                           message: "Open a prompt in Saved and tap the folder button to file it. The folder appears here.",
+                           actionLabel: "Go to Saved") { appState.activeTab = AppTab.history.rawValue }
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
+                        ScreenIntro(text: "Prompts and Skills saved to folders.")
                         ForEach(vm.folders, id: \.name) { folder in
                             FolderRow(name: folder.name, count: folder.count) {
                                 vm.openFolder(folder.name)
@@ -89,7 +90,7 @@ struct FoldersView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if vm.folderRecords.isEmpty {
                 EmptyState(title: "Nothing in \(vm.selectedFolder ?? "this folder")",
-                           message: "File prompts here from History with the folder button.")
+                           message: "File prompts here from Saved with the folder button.")
             } else {
                 ScrollView {
                     VStack(spacing: 0) {

@@ -51,7 +51,7 @@ enum AppTab: Int, CaseIterable, Identifiable {
         switch self {
         case .prompt:  return "PROMPT"
         case .skill:   return "SKILL"
-        case .history: return "HISTORY"
+        case .history: return "SAVED"
         case .folders: return "FOLDERS"
         case .profile: return "PROFILE"
         }
@@ -63,33 +63,51 @@ enum AppTab: Int, CaseIterable, Identifiable {
 struct PrimaryTabs: View {
     @Binding var selection: Int
 
+    /// Figma Navigation/Primary Tabs: inactive labels hug (16 each side) on a strip
+    /// with a bottom hairline; the active tab fills the rest, open to the screen below.
     var body: some View {
-        HStack(spacing: 0) {
+        // iPhone widths can't fit 16pt sides on every label; fall back to 8.
+        ViewThatFits(in: .horizontal) {
+            row(sidePadding: QM.Space.s16)
+            row(sidePadding: QM.Space.s8)
+        }
+        .frame(maxWidth: .infinity)
+        // Plain .background(Color) bleeds into the title bar and covers the header.
+        .background(QM.navStrip, ignoresSafeAreaEdges: [])
+    }
+
+    private func row(sidePadding: CGFloat) -> some View {
+        HStack(alignment: .bottom, spacing: 0) {
             ForEach(AppTab.allCases) { tab in
-                if tab != .prompt {
-                    Rectangle().fill(QM.borderDefault).frame(width: QM.stroke, height: 21)
-                }
                 let isActive = selection == tab.rawValue
                 Button(action: { selection = tab.rawValue }) {
                     Text(tab.title)
-                        .font(isActive ? QM.navTab : QM.bodyPrompt)
-                        .foregroundColor(isActive ? QM.textSecondary : QM.textNavActive)
+                        .font(isActive ? QM.navLabelActive : QM.navLabel)
+                        .foregroundColor(isActive ? QM.textAction : QM.textNavActive)
                         .lineLimit(1)
                         .fixedSize()
-                        .padding(.horizontal, QM.Space.s8)
-                        .frame(maxWidth: isActive ? nil : .infinity)
+                        .frame(height: 18)
+                        .padding(.horizontal, sidePadding)
+                        .padding(.vertical, QM.Space.s4)
+                        .frame(maxWidth: isActive ? .infinity : nil)
+                        .background(isActive ? QM.screen : Color.clear, ignoresSafeAreaEdges: [])
+                        .overlay {
+                            if isActive {
+                                HStack {
+                                    Rectangle().fill(QM.borderHeader).frame(width: QM.stroke)
+                                    Spacer()
+                                    Rectangle().fill(QM.borderHeader).frame(width: QM.stroke)
+                                }
+                            }
+                        }
+                        .overlay(alignment: .bottom) {
+                            if !isActive { Rectangle().fill(QM.borderHeader).frame(height: QM.stroke) }
+                        }
                         .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
-                .layoutPriority(isActive ? 1 : 0)
                 .accessibilityAddTraits(isActive ? .isSelected : [])
             }
-        }
-        .frame(maxWidth: .infinity)
-        .padding(.top, QM.Space.s4)
-        .padding(.bottom, QM.Space.s8)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
         }
     }
 }
@@ -804,6 +822,23 @@ struct ScreenTitle: View {
         }
         .multilineTextAlignment(.center)
         .frame(maxWidth: .infinity)
+    }
+}
+
+/// Screen intro (Figma desktop 04, 05): a centred subtitle, then divider-frame.
+struct ScreenIntro: View {
+    let text: String
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Text(text)
+                .font(QM.bodyPrompt)
+                .foregroundColor(QM.textSecondary)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+            SectionDivider()
+        }
     }
 }
 

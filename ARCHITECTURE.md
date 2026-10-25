@@ -35,13 +35,13 @@ Design-and-Code/PG-13/
   PG-13 macOS/
     PG13App.swift              macOS AppDelegate, NSPanel, stoplight buttons
   PG-13 iOS/PG13iOSApp.swift   iOS entry point
-  PG-13 iOS/Fonts, PG-13 macOS/Fonts   JetBrains Mono (Regular/Medium/Bold), Space Mono Regular
+  PG-13 iOS/Fonts, PG-13 macOS/Fonts   JetBrains Mono (Regular/Medium/Bold), Space Mono Regular, Geist Mono (Regular/Bold, tabs only; OFL)
 ```
 
 ## Architecture
 
 - **AppDelegate** (macOS only): `NSStatusBar` icon, creates the `NSPanel`, conforms to `NSWindowDelegate`.
-- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Skill, 2 History, 3 Folders, 4 Profile), `lightMode`, and the view models (`generateVM`, `skillVM`). Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
+- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Skill, 2 History (labelled SAVED), 3 Folders, 4 Profile), `lightMode`, and the view models (`generateVM`, `skillVM`). Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
 - **GenerateViewModel**: role, goal, extra info, tone and output-type selection, generate and refine, copy/share/save/edit state.
 - **SkillViewModel**: the Skill tab. Name, what it does / when to use, steps and rules go to Claude with a SKILL.md system prompt (frontmatter `name` and `description`, then numbered steps and rules, no em dashes). Saves with `kind = 'skill'`: `goal` holds the name, `role` the purpose, `generated_prompt` the file. Refine, copy, share, export and save-to-folder match the Prompt tab.
 - **MarkdownDocViewModel** (unused, kept for now): the old Docs tab. Doc type, title, subject, audience, required sections, depth. Depth sets both the length rule in the system prompt and `maxTokens` (1200 / 2500 / 4000), so the two cannot drift apart. The draft autosaves to `UserDefaults` on an 800ms debounce, because the macOS panel dismisses whenever focus leaves it.
@@ -69,7 +69,7 @@ The Supabase anon key is still hardcoded, which is correct: it is the publishabl
 `enum QM` in `Shared/DesignSystem.swift` mirrors the Figma file "prompt-generator" (`dn6XnEybPsH7QQ71yZVxXe`, page "21 · Global Components"). Each Figma variable maps to one `QM` member with the same name: `background/screen` → `QM.screen`, `text/nav-active` → `QM.textNavActive`, `border/accent-teal` → `QM.borderAccentTeal`, and so on. Light and dark values come from the Figma Light/Dark modes; hex with alpha is written AARRGGBB.
 
 - **Spacing / radius / stroke:** `QM.Space` (2, 4, 8, 10, 12, 16, 20), `QM.Radius` (sm 2, md 4, window 5), `QM.stroke` 0.5 (stroke/default; one device pixel on Retina). Figma's Spacing collection.
-- **Type:** the Figma text styles, as `Font.custom(..., relativeTo:)` so they scale with Dynamic Type: `labelSection`, `navTab`, `bodyPrompt`, `labelControl`, `headingScreen`, `headingReference`, `bodyReference`. Fonts are bundled and registered at launch by `QM.registerFonts()`.
+- **Type:** the Figma text styles, as `Font.custom(..., relativeTo:)` so they scale with Dynamic Type: `labelSection`, `navTab`, `navLabel` / `navLabelActive` (Geist Mono, the tab row), `bodyPrompt`, `labelControl`, `headingScreen`, `headingReference`, `bodyReference`. Fonts are bundled and registered at launch by `QM.registerFonts()`.
 - **Legacy names** (`bgBase`, `accentCyan`, `textMuted`, ...) alias the new tokens so older views (Docs, Markdown preview) pick up the new palette. New code uses the Figma names.
 
 The Quiet Machinery look (zero radius, system mono, `#0D0D0D`/magenta) is retired as of the 2026-10-23 redesign. Screens follow the Figma file.

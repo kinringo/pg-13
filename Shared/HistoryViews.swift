@@ -20,7 +20,11 @@ struct HistoryView: View {
                            message: "Saved prompts live in your account. Sign in on Profile and they show up here on every device.",
                            actionLabel: "Back to Sign In") { appState.activeTab = AppTab.profile.rawValue }
             } else {
-                if !vm.records.isEmpty { collectionBar }
+                if !vm.records.isEmpty {
+                    ScreenIntro(text: "View your history of saved prompts and skills below.")
+                        .padding(.horizontal, QM.Space.s20)
+                    collectionBar
+                }
                 signedInContent
             }
         }
