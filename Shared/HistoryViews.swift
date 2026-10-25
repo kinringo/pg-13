@@ -166,16 +166,27 @@ struct HistoryItemView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: QM.Space.s10) {
-            Button(action: onToggle) {
-                SavedItemHeader(title: record.goal, date: record.displayDate,
-                                kind: record.recordKind, tags: tags, isExpanded: isExpanded)
-                    .background(isHovered && !isExpanded ? QM.selected : Color.clear)
+            HStack(spacing: QM.Space.s16) {
+                Button(action: onToggle) {
+                    SavedItemHeader(title: record.goal, kind: record.recordKind,
+                                    tags: tags, isExpanded: isExpanded)
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint(isExpanded ? "Collapses the prompt" : "Shows the full prompt")
+                if !isExpanded {
+                    Button(action: onUse) {
+                        Image(systemName: ResultAction.edit.symbol)
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(QM.iconDefault)
+                            .frame(width: 24, height: 23)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help(editLabel)
+                    .accessibilityLabel(editLabel)
+                }
             }
-            .buttonStyle(.plain)
-            .accessibilityHint(isExpanded ? "Collapses the prompt" : "Shows the full prompt")
-#if os(macOS)
-            .onHover { isHovered = $0 }
-#endif
+            .padding(.horizontal, QM.Space.s10)
 
             if isExpanded {
                 PromptBox(text: record.generated_prompt, maxHeight: 200)
@@ -185,7 +196,7 @@ struct HistoryItemView: View {
                     (.folder, "Add to folder", showFolderInput, { onShowFolderInput() }),
                     (.share, shareFlash ? "Shared" : "Share", shareFlash, { sharePrompt() }),
                     (.save, "Export markdown", false, { exportMD() }),
-                    (.edit, record.recordKind == .skill ? "Edit in Skill" : "Edit in Prompt", false, { onUse() }),
+                    (.edit, editLabel, false, { onUse() }),
                     (.delete, "Delete", false, { onDelete() }),
                 ])
                 if showFolderInput {
@@ -206,9 +217,14 @@ struct HistoryItemView: View {
                 }
             }
         }
-        .padding(.vertical, QM.Space.s10)
+        // Figma List row: 16 above and below when collapsed.
+        .padding(.vertical, isExpanded ? QM.Space.s10 : QM.Space.s16)
+        .background(isHovered && !isExpanded ? QM.selected : Color.clear)
+#if os(macOS)
+        .onHover { isHovered = $0 }
+#endif
         .overlay(alignment: .bottom) {
-            Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
+            Rectangle().fill(QM.borderDefault).frame(height: QM.stroke)
         }
         .padding(.horizontal, QM.Space.s20)
 #if os(iOS)
@@ -221,6 +237,10 @@ struct HistoryItemView: View {
             }
         }
 #endif
+    }
+
+    private var editLabel: String {
+        record.recordKind == .skill ? "Edit in Skill" : "Edit in Prompt"
     }
 
     private var tags: [String] {

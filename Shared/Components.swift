@@ -529,12 +529,13 @@ struct KindChip: View {
     var body: some View {
         Text(kind.title)
             .font(QM.bodyPrompt)
-            .foregroundColor(kind == .skill ? QM.textOnAction : QM.textAction)
+            .foregroundColor(QM.textOnAction)
             .lineLimit(1)
+            .fixedSize()
             .padding(.horizontal, QM.Space.s8)
             .padding(.vertical, QM.Space.s4)
             .background(RoundedRectangle(cornerRadius: QM.Radius.sm)
-                .fill(kind == .skill ? QM.actionPrimaryBackground : QM.controlActive))
+                .fill(kind == .skill ? QM.badgeSkill : QM.badgePrompt))
     }
 }
 
@@ -669,18 +670,18 @@ struct FolderRow: View {
 
 // MARK: - List/Saved Item (header)
 
-/// Collapsed: name and date, then the PROMPT / SKILL badge and a chevron down.
+/// Collapsed (Figma List, Folder Row layout): name, then the PROMPT / SKILL badge.
+/// The pencil sits beside it in HistoryItemView, since a button can't nest in a button.
 /// Expanded: name and a chevron up, then the tone and style chips.
 struct SavedItemHeader: View {
     let title: String
-    let date: String
     let kind: RecordKind
     let tags: [String]
     let isExpanded: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: QM.Space.s8) {
-            HStack(alignment: .center, spacing: QM.Space.s4) {
+            HStack(alignment: .center, spacing: QM.Space.s16) {
                 Text(title.uppercased())
                     .font(QM.labelSection)
                     .tracking(1)
@@ -688,37 +689,23 @@ struct SavedItemHeader: View {
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 if isExpanded {
-                    chevron("chevron.up")
+                    Image(systemName: "chevron.up")
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundColor(QM.iconDefault)
+                        .frame(width: 24, height: 23)
+                        .accessibilityHidden(true)
                 } else {
-                    Text(date.uppercased())
-                        .font(QM.labelControl)
-                        .foregroundColor(QM.textControl)
+                    KindChip(kind: kind)
                 }
             }
-            if isExpanded {
-                if !tags.isEmpty {
-                    HStack(spacing: QM.Space.s4) {
-                        ForEach(tags, id: \.self) { TagChip(text: $0) }
-                    }
-                }
-            } else {
+            if isExpanded && !tags.isEmpty {
                 HStack(spacing: QM.Space.s4) {
-                    KindChip(kind: kind)
-                    Spacer(minLength: 0)
-                    chevron("chevron.down")
+                    ForEach(tags, id: \.self) { TagChip(text: $0) }
                 }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
-    }
-
-    private func chevron(_ symbol: String) -> some View {
-        Image(systemName: symbol)
-            .font(.system(size: 15, weight: .regular))
-            .foregroundColor(QM.iconDefault)
-            .frame(width: 24, height: 23)
-            .accessibilityHidden(true)
     }
 }
 

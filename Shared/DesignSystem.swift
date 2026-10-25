@@ -67,6 +67,10 @@ enum QM {
     static let controlActive     = Color.adaptive(light: "3300E5FF", dark: "1A1622")
     static let selected          = Color(hex: "3300E5FF")
     static let badge             = Color(hex: "80F7D4C2")
+    /// Type badge fills (Figma "Property 2=Prompt" / "Skill"). Figma paints them
+    /// with raw hex, not variables, so they have no dark values of their own.
+    static let badgePrompt       = Color(hex: "7A5E8A")
+    static let badgeSkill        = Color(hex: "60CED8")
     static let input             = Color.adaptive(light: "FFFFFF", dark: "2A2138")
     // action/*
     static let actionPrimary     = Color.adaptive(light: "991060", dark: "F03CAA")
