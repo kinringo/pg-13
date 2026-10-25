@@ -119,6 +119,7 @@ enum ServiceError: LocalizedError {
     case emailConfirmationRequired
     case accountAlreadyExists
     case emailNotConfirmed
+    case codeInvalid
     case backendUnreachable
 
     var errorDescription: String? {
@@ -131,11 +132,13 @@ enum ServiceError: LocalizedError {
         case .emptyResponse:               return "Claude returned nothing. Try rewording the goal."
         case .exportFailed(let why):       return "Export failed. \(why)"
         case .emailConfirmationRequired:
-            return "Account created. Click the link in the confirmation email, then sign in."
+            return "We sent an 8-digit code to your email. Enter it to finish creating your account."
         case .accountAlreadyExists:
             return "This email already has an account. Sign in instead."
         case .emailNotConfirmed:
-            return "This email is not confirmed yet. Click the link in the confirmation email, or confirm the user in the Supabase dashboard."
+            return "This email is not confirmed yet. Enter the code from your sign-up email, or ask for a new one."
+        case .codeInvalid:
+            return "That code is wrong or expired."
         case .backendUnreachable:
             return "Cannot reach the sync backend. Free Supabase projects pause after about a week idle. Open the Supabase dashboard and resume the project, then try again."
         }
