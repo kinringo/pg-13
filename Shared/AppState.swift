@@ -139,9 +139,11 @@ class GenerateViewModel: ObservableObject {
         guard hasResult else { errorMessage = "Nothing to save yet."; return }
         Task {
             do {
+                let title = await ClaudeService.shared.suggestTitle(goal: goal, prompt: generatedPrompt)
                 try await CloudHistoryStore.shared.savePrompt(
                     goal: goal, role: role, tone: selectedTone,
-                    style: selectedOutputType, prompt: generatedPrompt, folder: folder)
+                    style: selectedOutputType, prompt: generatedPrompt, folder: folder,
+                    title: title)
                 await MainActor.run {
                     self.savedMessage = folder != nil ? "Saved to \"\(folder!)\"" : "Saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
