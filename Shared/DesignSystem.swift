@@ -59,6 +59,8 @@ enum QM {
     static let canvas            = Color.adaptive(light: "FFFFFF", dark: "0B0B0F")
     static let screen            = Color.adaptive(light: screenHex.light, dark: screenHex.dark)
     // surface/*
+    /// Strip behind the inactive tabs (Figma header-and-navigation fill, #F6F6F2).
+    static let navStrip          = Color.adaptive(light: "F6F6F2", dark: "0B0B0F")
     static let windowHeader      = Color.adaptive(light: "FBE7D2", dark: "2A2138")
     static let field             = Color.adaptive(light: fieldHex.light, dark: fieldHex.dark)
     static let control           = Color.adaptive(light: "0500E5FF", dark: "1A1622")
@@ -143,11 +145,17 @@ enum QM {
     private static let jbMedium  = "JetBrainsMono-Medium"
     private static let jbBold    = "JetBrainsMono-Bold"
     private static let spaceMono = "SpaceMono-Regular"
+    private static let geistRegular = "GeistMono-Regular"
+    private static let geistBold    = "GeistMono-Bold"
 
     /// Label/Section: JetBrains Mono Bold 14, tracking 1
     static let labelSection   = Font.custom(jbBold, size: 14, relativeTo: .subheadline)
     /// Navigation/Tab: JetBrains Mono Medium 16
     static let navTab         = Font.custom(jbMedium, size: 16, relativeTo: .callout)
+    /// Navigation-Label, active tab: Geist Mono Bold 14
+    static let navLabelActive = Font.custom(geistBold, size: 14, relativeTo: .subheadline)
+    /// Navigation-Label, state=Default: Geist Mono Regular 14
+    static let navLabel       = Font.custom(geistRegular, size: 14, relativeTo: .subheadline)
     /// Body/Prompt: JetBrains Mono Regular 14
     static let bodyPrompt     = Font.custom(jbRegular, size: 14, relativeTo: .subheadline)
     /// Label/Control: Space Mono Regular 12
@@ -164,7 +172,7 @@ enum QM {
 
     /// Registers the bundled fonts. Call once at launch, before any view draws.
     static func registerFonts() {
-        for name in [jbRegular, jbMedium, jbBold, spaceMono] {
+        for name in [jbRegular, jbMedium, jbBold, spaceMono, geistRegular, geistBold] {
             guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }

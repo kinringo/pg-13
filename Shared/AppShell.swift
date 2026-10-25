@@ -12,9 +12,8 @@ struct AppShell: View {
         VStack(spacing: 0) {
             WindowHeader()
             VStack(spacing: QM.Space.s16) {
+                // header-and-navigation: the tabs sit flush under the header, full width.
                 PrimaryTabs(selection: $appState.activeTab)
-                    .padding(.horizontal, QM.Space.s20)
-                    .padding(.top, QM.Space.s10)
                 screen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
