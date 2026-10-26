@@ -152,7 +152,7 @@ class GenerateViewModel: ObservableObject {
         Task {
             do {
                 // Check first, so a signed-out save does not pay for a title call.
-                guard await AuthService.shared.isSignedIn else { throw ServiceError.notSignedIn }
+                guard AuthService.shared.isSignedIn else { throw ServiceError.notSignedIn }
                 let title = await ClaudeService.shared.suggestTitle(goal: goal, prompt: prompt)
                 let stored = try await CloudHistoryStore.shared.savePrompt(
                     goal: goal, role: role, tone: tone,
