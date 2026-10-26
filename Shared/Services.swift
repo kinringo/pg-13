@@ -309,7 +309,12 @@ class AuthService: ObservableObject {
                 return renewed.access_token
             } catch {
                 // Refresh token rejected → session is dead; force a fresh sign-in.
-                if case ServiceError.httpError = error { self.persist(nil) }
+                // A 5xx or a 429 is the server having a bad moment, not a dead
+                // token, so the session is kept and the next call tries again.
+                if case ServiceError.httpError(let code, _) = error,
+                   (400..<500).contains(code), code != 429 {
+                    self.persist(nil)
+                }
                 throw error
             }
         }
@@ -381,6 +386,22 @@ class CloudHistoryStore {
             URLQueryItem(name: "order", value: "created_at.desc"),
             URLQueryItem(name: "limit", value: "50"),
         ], "Load history")
+    }
+
+    /// Every saved record, newest first, for Export All. `fetchHistory` stops at
+    /// 50, and Supabase caps a single request at 1,000 rows, so this pages.
+    func fetchAllHistory() async throws -> [PromptRecord] {
+        let page = 1000
+        var all: [PromptRecord] = []
+        while true {
+            let rows = try await fetchRecords([
+                URLQueryItem(name: "order", value: "created_at.desc,id"),
+                URLQueryItem(name: "limit", value: String(page)),
+                URLQueryItem(name: "offset", value: String(all.count)),
+            ], "Load history")
+            all += rows
+            if rows.count < page { return all }
+        }
     }
 
     func fetchFolder(_ folder: String) async throws -> [PromptRecord] {
@@ -456,13 +477,62 @@ class CloudHistoryStore {
     @discardableResult
     func updateFolder(id: String, folder: String?) async throws -> String? {
         let folder = try await canonicalFolder(folder)
-        struct Body: Codable { let folder: String? }
+        // The synthesized encoder drops a nil Optional, which sent `{}` and left
+        // the folder untouched. Removing from a folder needs an explicit null.
+        struct Body: Encodable {
+            let folder: String?
+            enum CodingKeys: String, CodingKey { case folder }
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(folder, forKey: .folder)
+            }
+        }
         let data = try JSONEncoder().encode(Body(folder: folder))
         let req = try await makeRequest(queryItems: [
             URLQueryItem(name: "id", value: eq(id)),
         ], method: "PATCH", body: data)
         _ = try await run(req, "Update")
         return folder
+    }
+
+    /// Sets a saved record's title. Blank clears it (null), and the list then
+    /// falls back to the goal, as it does for rows saved without a title.
+    func updateTitle(id: String, title: String) async throws -> String? {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let stored = trimmed.isEmpty ? nil : trimmed
+        // Encoded by hand so nil goes out as null, not as a missing key.
+        struct Body: Encodable {
+            let title: String?
+            enum CodingKeys: String, CodingKey { case title }
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(title, forKey: .title)
+            }
+        }
+        let data = try JSONEncoder().encode(Body(title: stored))
+        let req = try await makeRequest(queryItems: [
+            URLQueryItem(name: "id", value: eq(id)),
+        ], method: "PATCH", body: data)
+        _ = try await run(req, "Rename")
+        return stored
+    }
+
+    /// Renames a folder by moving every record in it. A new name that matches
+    /// another folder (ignoring case) merges into that folder; a change of case
+    /// alone ("work" to "Work") keeps the spelling typed. Returns the name stored.
+    func renameFolder(from old: String, to typed: String) async throws -> String {
+        let name = typed.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return old }
+        let target = name.caseInsensitiveCompare(old) == .orderedSame
+            ? name : (try await canonicalFolder(name) ?? name)
+        guard target != old else { return old }
+        struct Body: Codable { let folder: String }
+        let data = try JSONEncoder().encode(Body(folder: target))
+        let req = try await makeRequest(queryItems: [
+            URLQueryItem(name: "folder", value: eq(old)),
+        ], method: "PATCH", body: data)
+        _ = try await run(req, "Rename folder")
+        return target
     }
 
     func delete(id: String) async throws {

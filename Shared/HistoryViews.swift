@@ -12,6 +12,7 @@ struct HistoryView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var auth = AuthService.shared
     @StateObject private var exporter = MarkdownExporter()
+    @State private var isExportingAll = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -39,18 +40,35 @@ struct HistoryView: View {
         }
     }
 
-    /// Exports every loaded prompt as one markdown document with a table of contents.
+    /// Exports every saved prompt, not just the 50 the list shows, as one
+    /// markdown document with a table of contents.
+    private func exportAll() {
+        isExportingAll = true
+        exporter.errorMessage = ""
+        Task { @MainActor in
+            do {
+                let all = try await CloudHistoryStore.shared.fetchAllHistory()
+                exporter.export(
+                    Markdown.collection(title: "PG-13 Prompt Library", records: all),
+                    fileName: "pg13-prompt-library.md")
+            } catch {
+                exporter.errorMessage = ServiceError
+                    .exportFailed(error.localizedDescription).localizedDescription
+            }
+            isExportingAll = false
+        }
+    }
+
     @ViewBuilder var collectionBar: some View {
         VStack(alignment: .leading, spacing: QM.Space.s4) {
             HStack(spacing: QM.Space.s8) {
                 Text("\(vm.records.count) SAVED")
                     .font(QM.labelControl).foregroundColor(QM.textSecondary)
                 Spacer()
-                SmallButton(label: "Export All MD") {
-                    exporter.export(
-                        Markdown.collection(title: "PG-13 Prompt Library", records: vm.records),
-                        fileName: "pg13-prompt-library.md")
+                SmallButton(label: isExportingAll ? "Exporting..." : "Export All MD") {
+                    exportAll()
                 }
+                .disabled(isExportingAll)
             }
             if !exporter.errorMessage.isEmpty {
                 FormMessage(text: exporter.errorMessage, kind: .error)
@@ -89,7 +107,8 @@ struct HistoryView: View {
                             onDelete:         { vm.delete(record) },
                             onSetFolder:      { vm.setFolder(record, folder: $0) },
                             onShowFolderInput:{ vm.folderInputID = vm.folderInputID == record.id ? nil : record.id },
-                            onUse: { appState.open(record) }
+                            onUse: { appState.open(record) },
+                            onRename: { vm.rename(record, to: $0) }
                         )
                         .listRowInsets(EdgeInsets())
                         .listRowSeparator(.hidden)
@@ -121,7 +140,8 @@ struct HistoryView: View {
                                 onDelete:         { vm.delete(record) },
                                 onSetFolder:      { vm.setFolder(record, folder: $0) },
                                 onShowFolderInput:{ vm.folderInputID = vm.folderInputID == record.id ? nil : record.id },
-                                onUse: { appState.open(record) }
+                                onUse: { appState.open(record) },
+                                onRename: { vm.rename(record, to: $0) }
                             )
                             .contextMenu {
                                 Button(role: .destructive) { vm.delete(record) } label: {
@@ -152,11 +172,16 @@ struct HistoryItemView: View {
     let onUse: () -> Void
     /// Set inside an open folder: adds REMOVE beside SAVE in the folder picker.
     var onRemoveFromFolder: (() -> Void)? = nil
+    /// Set where titles can be edited: adds RENAME to the toolbar. Blank
+    /// clears the title, and the row falls back to the goal.
+    var onRename: ((String) -> Void)? = nil
 
     @State private var isHovered = false
     @State private var shareFlash = false
     @State private var showShareSheet = false
     @State private var shareSheetText = ""
+    @State private var showRenameInput = false
+    @State private var renameText = ""
     @StateObject private var exporter = MarkdownExporter()
 
     var filteredFolders: [String] {
@@ -190,15 +215,13 @@ struct HistoryItemView: View {
 
             if isExpanded {
                 PromptBox(text: record.generated_prompt, maxHeight: 200)
-                ResultToolbar(items: [
-                    (.copy, "Copy", false, { copyToPasteboard(record.generated_prompt) }),
-                    // The folder icon toggles the picker, as in the Figma prototype.
-                    (.folder, "Add to folder", showFolderInput, { onShowFolderInput() }),
-                    (.share, shareFlash ? "Shared" : "Share", shareFlash, { sharePrompt() }),
-                    (.save, "Export markdown", false, { exportMD() }),
-                    (.edit, editLabel, false, { onUse() }),
-                    (.delete, "Delete", false, { onDelete() }),
-                ])
+                ResultToolbar(items: toolbarItems)
+                if showRenameInput, let onRename {
+                    InlineInput(placeholder: "Title...", text: $renameText, actionLabel: "Save") {
+                        onRename(renameText)
+                        showRenameInput = false
+                    }
+                }
                 if showFolderInput {
                     HStack(spacing: QM.Space.s8) {
                         InlineInput(placeholder: "Folder name...", text: $folderInputText,
@@ -237,6 +260,27 @@ struct HistoryItemView: View {
             }
         }
 #endif
+    }
+
+    private var toolbarItems: [(action: ResultAction, label: String, active: Bool, run: () -> Void)] {
+        var items: [(action: ResultAction, label: String, active: Bool, run: () -> Void)] = [
+            (.copy, "Copy", false, { copyToPasteboard(record.generated_prompt) }),
+            // The folder icon toggles the picker, as in the Figma prototype.
+            (.folder, "Add to folder", showFolderInput, { onShowFolderInput() }),
+            (.share, shareFlash ? "Shared" : "Share", shareFlash, { sharePrompt() }),
+            (.save, "Export markdown", false, { exportMD() }),
+        ]
+        if onRename != nil {
+            items.append((.rename, "Rename", showRenameInput, {
+                renameText = record.displayTitle
+                showRenameInput.toggle()
+            }))
+        }
+        items += [
+            (.edit, editLabel, false, { onUse() }),
+            (.delete, "Delete", false, { onDelete() }),
+        ]
+        return items
     }
 
     private var editLabel: String {

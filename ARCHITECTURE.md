@@ -56,6 +56,7 @@ Design-and-Code/PG-13/
 - **SupabaseConfig**: `https://kxkpewnebbftderbizph.supabase.co` (line 93). Earlier docs named `lgbkozbwnilhsuvfpxnd` (post-auth project) and `mamflwiavkwybrsttwlr` (pre-auth). Neither is what ships now. The keepalive workflow reads this URL from source, so it follows a repoint automatically.
 - **AuthService**: Supabase Auth. Session stored in Keychain under `supabase_session`. `updateUser` (PUT /auth/v1/user) changes the password at once; a new email waits on Supabase's confirmation link. No password reset yet: it needs Supabase auth email plus a page for the reset link.
 - **CloudHistoryStore**: per-user rows with RLS. `kind` ('prompt' or 'skill', default 'prompt') was added 2026-10-24 (`supabase/kind.sql`); older builds that never send it still save prompts.
+  Renames: `updateTitle` sets a record's `title` (blank clears it, and the list falls back to `goal`); `renameFolder` moves every row in a folder to the new name, merging into an existing folder that matches ignoring case. Nil values in PATCH bodies are encoded by hand as `null`, since the synthesized encoder drops them and PostgREST then changes nothing.
 - **HistoryStore**: reads and retires the pre-sync `prompt_history.json`. It has no other API; it exists only for the one-time migration. Live save/load goes through the cloud store. Unsigned users can generate and export; Save on Generate fails until they sign in.
 
 ### Credential storage
