@@ -235,17 +235,39 @@ class AuthService: ObservableObject {
     /// Emails an 8-digit password reset code (the "Reset Password" template
     /// sends {{ .Token }}). Supabase answers 200 even for unknown emails.
     func sendPasswordResetCode(email: String) async throws {
+        pendingRecovery = nil   // a new code means a new recovery
         _ = try await authRequestData(path: "recover", body: ["email": email])
     }
+
+    /// A recovery session from a reset code that verified but whose new
+    /// password was then rejected. `/verify` uses the code up, so without this
+    /// a retry with a better password failed on the spent code. Memory only.
+    private var pendingRecovery: AuthSession?
 
     /// Checks the reset code, saves the new password, then signs in. The
     /// session is kept only once the password is saved, so a rejected password
     /// does not leave the person signed in with the old one.
     func resetPassword(email: String, code: String, newPassword: String) async throws {
-        let t = try await authRequest(path: "verify",
-                                      body: ["type": "recovery", "email": email, "token": code])
-        try await putUser(token: t.access_token, body: ["password": newPassword])
-        persist(makeSession(t, fallbackEmail: email))
+        let recovery: AuthSession
+        if let p = pendingRecovery, p.email.caseInsensitiveCompare(email) == .orderedSame,
+           Date().timeIntervalSince1970 < p.expires_at {
+            recovery = p
+        } else {
+            pendingRecovery = nil
+            let t = try await authRequest(path: "verify",
+                                          body: ["type": "recovery", "email": email, "token": code])
+            recovery = makeSession(t, fallbackEmail: email)
+        }
+        do {
+            try await putUser(token: recovery.access_token, body: ["password": newPassword])
+        } catch {
+            // A 401 means the recovery session itself is dead: start over.
+            if case ServiceError.httpError(401, _) = error { pendingRecovery = nil }
+            else { pendingRecovery = recovery }
+            throw error
+        }
+        pendingRecovery = nil
+        persist(recovery)
         await CloudHistoryStore.shared.migrateLocalIfNeeded()
     }
 

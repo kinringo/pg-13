@@ -14,16 +14,10 @@ struct GenerateView: View {
     @State private var folderName = ""
 
     var body: some View {
-        ScreenScroll(scrollTarget: vm.generatedPrompt) {
+        ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0) {
 
-            // API Key
             if vm.showAPIKeyField {
-                HStack(alignment: .bottom, spacing: QM.Space.s8) {
-                    AuthField(label: "Anthropic API Key", placeholder: "sk-ant-...",
-                              text: $vm.inlineAPIKey, secure: true)
-                    SmallButton(label: "Save", style: .label) { vm.saveAPIKey() }
-                        .padding(.bottom, QM.Space.s8)
-                }
+                APIKeyRow(text: $vm.inlineAPIKey) { vm.saveAPIKey() }
             }
 
             // Prompt Form: Form/Field/Generator x3
@@ -107,7 +101,11 @@ struct SkillView: View {
     @State private var folderName = ""
 
     var body: some View {
-        ScreenScroll(scrollTarget: vm.generated) {
+        ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0) {
+
+            if vm.showAPIKeyField {
+                APIKeyRow(text: $vm.inlineAPIKey) { vm.saveAPIKey() }
+            }
 
             // Skill Form
             VStack(alignment: .leading, spacing: QM.Space.s10) {
@@ -167,9 +165,28 @@ struct SkillView: View {
 /// The scroll anchor on a generated result.
 let generatedResultID = "generatedResult"
 
+/// The Anthropic key field, shown on Prompt and Skill when a key is missing
+/// or was rejected.
+struct APIKeyRow: View {
+    @Binding var text: String
+    let onSave: () -> Void
+
+    var body: some View {
+        HStack(alignment: .bottom, spacing: QM.Space.s8) {
+            AuthField(label: "Anthropic API Key", placeholder: "sk-ant-...",
+                      text: $text, secure: true)
+            SmallButton(label: "Save", style: .label, action: onSave)
+                .padding(.bottom, QM.Space.s8)
+        }
+    }
+}
+
 /// Screen Body Scroll: content with a 16 gap, scrolled to the result when one arrives.
+///
+/// Keyed on the result's version, not its text: editing the result by hand
+/// changes the text on every keystroke, and each change used to scroll.
 struct ScreenScroll<Content: View>: View {
-    let scrollTarget: String
+    let scrollTarget: Int
     @ViewBuilder let content: () -> Content
 
     var body: some View {
@@ -197,7 +214,7 @@ struct ScreenScroll<Content: View>: View {
             }
 #endif
             .onChangeCompat(of: scrollTarget) { newValue in
-                if !newValue.isEmpty {
+                if newValue > 0 {
                     withAnimation(.easeOut(duration: 0.35)) {
                         proxy.scrollTo(generatedResultID, anchor: .top)
                     }

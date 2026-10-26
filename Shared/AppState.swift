@@ -101,12 +101,13 @@ class GenerateViewModel: ObservableObject {
             return
         }
         errorMessage = ""; isGenerating = true
+        // Built here, on the main thread, so the Task never reads the
+        // @Published fields while the UI may be writing them.
+        let (system, message, maxTokens) = (buildSystemPrompt(), buildUserMessage(), maxTokensForRequest)
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: buildSystemPrompt(),
-                    userMessage: buildUserMessage(),
-                    maxTokens: maxTokensForRequest)
+                    systemPrompt: system, userMessage: message, maxTokens: maxTokens)
                 await MainActor.run { self.generatedPrompt = result; self.version += 1; self.isGenerating = false }
             } catch {
                 await MainActor.run { self.handle(error); self.isGenerating = false }
@@ -119,16 +120,20 @@ class GenerateViewModel: ObservableObject {
         guard hasResult else {
             errorMessage = "Generate a prompt before refining it."; return
         }
+        guard !isRefining else { return }
         isRefining = true; errorMessage = ""
+        let request = refineInput
+        let (system, maxTokens) = (buildRefineSystemPrompt(), maxTokensForRequest)
+        let message = "Prompt to revise:\n\(generatedPrompt)\n\nRequested change:\n\(request.capped(1000))"
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: buildRefineSystemPrompt(),
-                    userMessage: "Prompt to revise:\n\(generatedPrompt)\n\nRequested change:\n\(refineInput.capped(1000))",
-                    maxTokens: maxTokensForRequest)
+                    systemPrompt: system, userMessage: message, maxTokens: maxTokens)
                 await MainActor.run {
                     self.generatedPrompt = result; self.version += 1
-                    self.refineInput = ""; self.isRefining = false
+                    // Keep anything typed while the request was running.
+                    if self.refineInput == request { self.refineInput = "" }
+                    self.isRefining = false
                 }
             } catch {
                 await MainActor.run { self.handle(error); self.isRefining = false }
@@ -293,6 +298,8 @@ class SkillViewModel: ObservableObject {
     @Published var isSaving = false
     @Published var copyFlash = false
     @Published var shareFlash = false
+    @Published var inlineAPIKey = ""
+    @Published var showAPIKeyField = false
 
     var hasResult: Bool { !generated.isEmpty }
 
@@ -308,35 +315,56 @@ class SkillViewModel: ObservableObject {
             errorMessage = "Say what the skill does and when to use it."; return
         }
         guard ClaudeService.shared.getAPIKey() != nil else {
-            errorMessage = "Add your Anthropic API key on the Prompt tab, then try again."; return
+            showAPIKeyField = true
+            errorMessage = "Enter your Anthropic API key above, then tap SAVE."; return
         }
         errorMessage = ""; isGenerating = true
+        let message = userMessage
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: Self.systemPrompt, userMessage: userMessage, maxTokens: 1500)
+                    systemPrompt: Self.systemPrompt, userMessage: message, maxTokens: 1500)
                 await MainActor.run { self.generated = result; self.version += 1; self.isGenerating = false }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isGenerating = false }
+                await MainActor.run { self.handle(error); self.isGenerating = false }
             }
         }
     }
 
+    func saveAPIKey() {
+        let key = inlineAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { errorMessage = "Paste a key first, then tap SAVE."; return }
+        KeychainHelper.save(key, key: "anthropic_api_key")
+        showAPIKeyField = false; inlineAPIKey = ""; errorMessage = ""
+    }
+
+    /// Same as the Prompt tab: a rejected key reopens the key field here,
+    /// instead of sending the person to another tab that may not show it.
+    private func handle(_ error: Error) {
+        if case ServiceError.httpError(401, _) = error {
+            showAPIKeyField = true
+            errorMessage = "That API key was rejected. Paste a new key above, then tap SAVE."
+        } else {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func refine() {
-        guard !refineInput.trimmingCharacters(in: .whitespaces).isEmpty, hasResult else { return }
+        guard !refineInput.trimmingCharacters(in: .whitespaces).isEmpty, hasResult, !isRefining else { return }
         isRefining = true; errorMessage = ""
+        let request = refineInput
+        let message = "SKILL.md to revise:\n\(generated)\n\nRequested change:\n\(request.capped(1000))"
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: Self.refinePrompt,
-                    userMessage: "SKILL.md to revise:\n\(generated)\n\nRequested change:\n\(refineInput.capped(1000))",
-                    maxTokens: 1500)
+                    systemPrompt: Self.refinePrompt, userMessage: message, maxTokens: 1500)
                 await MainActor.run {
                     self.generated = result; self.version += 1
-                    self.refineInput = ""; self.isRefining = false
+                    if self.refineInput == request { self.refineInput = "" }
+                    self.isRefining = false
                 }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isRefining = false }
+                await MainActor.run { self.handle(error); self.isRefining = false }
             }
         }
     }

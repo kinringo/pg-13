@@ -69,6 +69,7 @@ struct ProfileView: View {
                 else if reset == .email { forgotPassword }
                 else if case .code(let e) = reset { newPassword(email: e) }
                 else { signedOut }
+                if !auth.isSignedIn { apiKeyLink }
                 themeToggle
             }
             .padding(.horizontal, QM.Space.s20)
@@ -207,6 +208,16 @@ struct ProfileView: View {
         .padding(.top, QM.Space.s8)
         TextLink(label: working == .update ? "Saving..." : "Change Password") { updateAccount() }
             .disabled(working != nil)
+        apiKeyLink
+    }
+
+    /// Opens the key field on Prompt, so a saved key can be replaced before
+    /// it fails, not only after a 401.
+    private var apiKeyLink: some View {
+        TextLink(label: "Change Anthropic API Key", color: QM.textAccentTeal) {
+            appState.generateVM.showAPIKeyField = true
+            appState.activeTab = AppTab.prompt.rawValue
+        }
     }
 
     private func fields(passwordPlaceholder: String) -> some View {
