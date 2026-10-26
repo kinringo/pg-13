@@ -426,7 +426,7 @@ private struct LargeButtonStyle: ButtonStyle {
 
 /// The six result actions, in Figma order. SF Symbols stand in for the Figma icons.
 enum ResultAction: CaseIterable, Identifiable {
-    case copy, folder, share, save, edit, delete
+    case copy, folder, share, save, rename, edit, delete
     var id: Self { self }
     var symbol: String {
         switch self {
@@ -434,6 +434,7 @@ enum ResultAction: CaseIterable, Identifiable {
         case .folder: return "folder"
         case .share:  return "square.and.arrow.up"
         case .save:   return "arrow.down.to.line"
+        case .rename: return "textformat"
         case .edit:   return "pencil"
         case .delete: return "trash"
         }
@@ -445,6 +446,7 @@ enum ResultAction: CaseIterable, Identifiable {
         case .folder: return "Folder"
         case .share:  return "Share"
         case .save:   return "Save"
+        case .rename: return "Rename"
         case .edit:   return "Edit"
         case .delete: return "Delete"
         }

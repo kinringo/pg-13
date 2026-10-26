@@ -27,6 +27,39 @@ You make changes to PG-13, a native SwiftUI prompt generator that calls the Clau
 8. **`SupabaseConfig` in `Services.swift` is the only place the project URL lives.** `.github/workflows/supabase-keepalive.yml` reads it from there.
 9. **No pangrams in anything you output.** That covers code, sample and placeholder text, test input, and your report. "The quick brown fox jumps over the lazy dog" and lines like it are out. When you need sample text, write a realistic PG-13 input instead, such as a short prompt goal.
 
+## Prompt and Skill Building
+
+How the two generators turn a form into text, and how that text is stored. All of it lives in `Shared/AppState.swift` (view models) and `Shared/Services.swift` (`ClaudeService`, `CloudHistoryStore`). Keep this section true when you change either.
+
+**The request.** `ClaudeService.generate` sends one user message and one system prompt to `/v1/messages` with `thinking` disabled. The reply is every `text` block joined and trimmed. An empty reply throws `ServiceError.emptyResponse`, and a 401 reopens the API key field on whichever tab sent it.
+
+**Prompt tab** (`GenerateViewModel`):
+- User message: `Goal:`, then `Role/Background:` and `Additional context:` when filled. Inputs are cut with `String.capped` (goal 2000, role 500, extras 2000, refine request 1000).
+- System prompt (`buildSystemPrompt`): one ready-to-use prompt, second-person imperative, no preamble or hedge words, no em dashes, plus `Tone:` if set. Output type sets length: Bullets, Steps, Table, Template, Q&A and Checklist allow markdown with 12 lines max and `max_tokens` 1024; any other type is no markdown, 4 sentences, 512; no type is 2 to 3 sentences, 512. Length rule and `max_tokens` must move together.
+- Refine (`buildRefineSystemPrompt`) keeps tone and format but drops the length cap on purpose, so "make it longer" is not undone.
+
+**Skill tab** (`SkillViewModel`):
+- User message: `Skill name:` (cut at 80) if typed, `What it does and when to use it:`, then `Steps and rules:`. `max_tokens` is always 1500.
+- System prompt: a SKILL.md with YAML frontmatter of exactly `name` (kebab-case) and `description`, then numbered steps, then rules. Refine keeps the frontmatter format.
+- The only parsing in the app: `displayName` is the typed name, else the first output line starting `name:`, else `untitled-skill`. There is no YAML parser, so quoted or indented names are not handled. `fileName` slugs it to `skill-<first five words>.md`.
+
+**Storage.** Both kinds share `prompt_history`, and some columns change meaning with `kind`:
+
+| Column | `kind = 'prompt'` | `kind = 'skill'` |
+|---|---|---|
+| `goal` | the goal | the skill name |
+| `role` | role or background | what it does and when to use it |
+| `tone`, `style` | tone, output type | null |
+| `generated_prompt` | the prompt | the whole SKILL.md |
+| `title` | 2 to 5 words from `suggestTitle`, or edited by RENAME | null until renamed |
+
+- `suggestTitle` is a second call (`max_tokens` 30). It keeps the first line, strips quotes and a final period, and returns nil when empty or over 60 characters. A nil title never blocks a save.
+- The Saved list shows `title`, else `goal` (`PromptRecord.displayTitle`). A row with no `kind` reads as a prompt. `AppState.open` routes a record to the tab that matches its kind.
+- Folder names go through `canonicalFolder`, which reuses an existing folder's spelling when the typed name differs only in case.
+- PATCH bodies that can carry nil (`updateFolder`, `updateTitle`) encode it as an explicit `null`. The synthesized encoder drops nil keys, and PostgREST then changes nothing.
+
+**Known gaps** (report, don't fix unless asked): nothing checks Claude's output against the rules it was given (the dash and heading linter in `Markdown.swift` is unused); skills never get a suggested title; markdown exports use `goal` for headings, not `title`.
+
 ## Boundaries
 
 - Don't commit, push, open PRs, or switch branches. Leave the change in the working tree for the main session.

@@ -70,6 +70,7 @@ class GenerateViewModel: ObservableObject {
     @Published var refineInput: String = ""
     @Published var isRefining: Bool = false
     @Published var savedMessage: String = ""
+    @Published var isSaving: Bool = false
     @Published var shareFlash: Bool = false
     @Published var copyFlash: Bool = false
     @Published var inlineAPIKey: String = ""
@@ -100,12 +101,13 @@ class GenerateViewModel: ObservableObject {
             return
         }
         errorMessage = ""; isGenerating = true
+        // Built here, on the main thread, so the Task never reads the
+        // @Published fields while the UI may be writing them.
+        let (system, message, maxTokens) = (buildSystemPrompt(), buildUserMessage(), maxTokensForRequest)
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: buildSystemPrompt(),
-                    userMessage: buildUserMessage(),
-                    maxTokens: maxTokensForRequest)
+                    systemPrompt: system, userMessage: message, maxTokens: maxTokens)
                 await MainActor.run { self.generatedPrompt = result; self.version += 1; self.isGenerating = false }
             } catch {
                 await MainActor.run { self.handle(error); self.isGenerating = false }
@@ -118,16 +120,20 @@ class GenerateViewModel: ObservableObject {
         guard hasResult else {
             errorMessage = "Generate a prompt before refining it."; return
         }
+        guard !isRefining else { return }
         isRefining = true; errorMessage = ""
+        let request = refineInput
+        let (system, maxTokens) = (buildRefineSystemPrompt(), maxTokensForRequest)
+        let message = "Prompt to revise:\n\(generatedPrompt)\n\nRequested change:\n\(request.capped(1000))"
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: buildRefineSystemPrompt(),
-                    userMessage: "Prompt to revise:\n\(generatedPrompt)\n\nRequested change:\n\(refineInput.capped(1000))",
-                    maxTokens: maxTokensForRequest)
+                    systemPrompt: system, userMessage: message, maxTokens: maxTokens)
                 await MainActor.run {
                     self.generatedPrompt = result; self.version += 1
-                    self.refineInput = ""; self.isRefining = false
+                    // Keep anything typed while the request was running.
+                    if self.refineInput == request { self.refineInput = "" }
+                    self.isRefining = false
                 }
             } catch {
                 await MainActor.run { self.handle(error); self.isRefining = false }
@@ -137,19 +143,31 @@ class GenerateViewModel: ObservableObject {
 
     func save(folder: String?) {
         guard hasResult else { errorMessage = "Nothing to save yet."; return }
+        // The title call makes a save take a second or two; without this a
+        // second tap in that gap saved the prompt twice.
+        guard !isSaving else { return }
+        isSaving = true; errorMessage = ""; savedMessage = "Saving..."
+        let (goal, role, tone) = (self.goal, self.role, selectedTone)
+        let (style, prompt) = (selectedOutputType, generatedPrompt)
         Task {
             do {
-                let title = await ClaudeService.shared.suggestTitle(goal: goal, prompt: generatedPrompt)
+                // Check first, so a signed-out save does not pay for a title call.
+                guard await AuthService.shared.isSignedIn else { throw ServiceError.notSignedIn }
+                let title = await ClaudeService.shared.suggestTitle(goal: goal, prompt: prompt)
                 let stored = try await CloudHistoryStore.shared.savePrompt(
-                    goal: goal, role: role, tone: selectedTone,
-                    style: selectedOutputType, prompt: generatedPrompt, folder: folder,
+                    goal: goal, role: role, tone: tone,
+                    style: style, prompt: prompt, folder: folder,
                     title: title)
                 await MainActor.run {
+                    self.isSaving = false
                     self.savedMessage = stored.map { "Saved to \"\($0)\"" } ?? "Saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
                 }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription }
+                await MainActor.run {
+                    self.isSaving = false; self.savedMessage = ""
+                    self.errorMessage = error.localizedDescription
+                }
             }
         }
     }
@@ -198,10 +216,13 @@ class GenerateViewModel: ObservableObject {
         }
     }
 
+    /// Replaces the whole form, so nothing from the previous session (extras,
+    /// a half-typed refinement, an old error) rides along on the next generate.
     func populate(from record: PromptRecord) {
-        role = record.role ?? ""; goal = record.goal
+        role = record.role ?? ""; goal = record.goal; extraInfo = ""
         generatedPrompt = record.generated_prompt; version = 1
-        isEditing = false
+        isEditing = false; refineInput = ""
+        errorMessage = ""; savedMessage = ""; copyFlash = false; shareFlash = false
         selectedTone = record.tone ?? ""; selectedOutputType = record.style ?? ""
     }
 
@@ -274,8 +295,11 @@ class SkillViewModel: ObservableObject {
     @Published var refineInput: String = ""
     @Published var isRefining = false
     @Published var savedMessage: String = ""
+    @Published var isSaving = false
     @Published var copyFlash = false
     @Published var shareFlash = false
+    @Published var inlineAPIKey = ""
+    @Published var showAPIKeyField = false
 
     var hasResult: Bool { !generated.isEmpty }
 
@@ -291,52 +315,80 @@ class SkillViewModel: ObservableObject {
             errorMessage = "Say what the skill does and when to use it."; return
         }
         guard ClaudeService.shared.getAPIKey() != nil else {
-            errorMessage = "Add your Anthropic API key on the Prompt tab, then try again."; return
+            showAPIKeyField = true
+            errorMessage = "Enter your Anthropic API key above, then tap SAVE."; return
         }
         errorMessage = ""; isGenerating = true
+        let message = userMessage
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: Self.systemPrompt, userMessage: userMessage, maxTokens: 1500)
+                    systemPrompt: Self.systemPrompt, userMessage: message, maxTokens: 1500)
                 await MainActor.run { self.generated = result; self.version += 1; self.isGenerating = false }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isGenerating = false }
+                await MainActor.run { self.handle(error); self.isGenerating = false }
             }
         }
     }
 
+    func saveAPIKey() {
+        let key = inlineAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !key.isEmpty else { errorMessage = "Paste a key first, then tap SAVE."; return }
+        KeychainHelper.save(key, key: "anthropic_api_key")
+        showAPIKeyField = false; inlineAPIKey = ""; errorMessage = ""
+    }
+
+    /// Same as the Prompt tab: a rejected key reopens the key field here,
+    /// instead of sending the person to another tab that may not show it.
+    private func handle(_ error: Error) {
+        if case ServiceError.httpError(401, _) = error {
+            showAPIKeyField = true
+            errorMessage = "That API key was rejected. Paste a new key above, then tap SAVE."
+        } else {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     func refine() {
-        guard !refineInput.trimmingCharacters(in: .whitespaces).isEmpty, hasResult else { return }
+        guard !refineInput.trimmingCharacters(in: .whitespaces).isEmpty, hasResult, !isRefining else { return }
         isRefining = true; errorMessage = ""
+        let request = refineInput
+        let message = "SKILL.md to revise:\n\(generated)\n\nRequested change:\n\(request.capped(1000))"
         Task {
             do {
                 let result = try await ClaudeService.shared.generate(
-                    systemPrompt: Self.refinePrompt,
-                    userMessage: "SKILL.md to revise:\n\(generated)\n\nRequested change:\n\(refineInput.capped(1000))",
-                    maxTokens: 1500)
+                    systemPrompt: Self.refinePrompt, userMessage: message, maxTokens: 1500)
                 await MainActor.run {
                     self.generated = result; self.version += 1
-                    self.refineInput = ""; self.isRefining = false
+                    if self.refineInput == request { self.refineInput = "" }
+                    self.isRefining = false
                 }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isRefining = false }
+                await MainActor.run { self.handle(error); self.isRefining = false }
             }
         }
     }
 
     func save(folder: String?) {
         guard hasResult else { errorMessage = "Nothing to save yet."; return }
+        guard !isSaving else { return }
+        isSaving = true; errorMessage = ""; savedMessage = "Saving..."
+        let (name, purpose, file) = (displayName, self.purpose, generated)
         Task {
             do {
                 let stored = try await CloudHistoryStore.shared.savePrompt(
-                    goal: displayName, role: purpose, tone: "", style: "",
-                    prompt: generated, folder: folder, kind: .skill)
+                    goal: name, role: purpose, tone: "", style: "",
+                    prompt: file, folder: folder, kind: .skill)
                 await MainActor.run {
+                    self.isSaving = false
                     self.savedMessage = stored.map { "Saved to \"\($0)\"" } ?? "Saved"
                     DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
                 }
             } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription }
+                await MainActor.run {
+                    self.isSaving = false; self.savedMessage = ""
+                    self.errorMessage = error.localizedDescription
+                }
             }
         }
     }
@@ -358,6 +410,8 @@ class SkillViewModel: ObservableObject {
     func populate(from record: PromptRecord) {
         name = record.goal; purpose = record.role ?? ""; steps = ""
         generated = record.generated_prompt; version = 1; isEditing = false
+        refineInput = ""; errorMessage = ""; savedMessage = ""
+        copyFlash = false; shareFlash = false
     }
 
     /// The saved name: what was typed, or the `name:` line Claude wrote.
@@ -454,6 +508,21 @@ class HistoryViewModel: ObservableObject {
             }
         }
     }
+
+    func rename(_ record: PromptRecord, to title: String) {
+        Task {
+            do {
+                let stored = try await CloudHistoryStore.shared.updateTitle(id: record.id, title: title)
+                await MainActor.run {
+                    if let idx = self.records.firstIndex(where: { $0.id == record.id }) {
+                        self.records[idx].title = stored
+                    }
+                }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
 }
 
 // MARK: - FoldersViewModel
@@ -530,6 +599,35 @@ class FoldersViewModel: ObservableObject {
 
     func toggleFolderInput(_ id: String) {
         folderInputID = folderInputID == id ? nil : id
+    }
+
+    func rename(_ record: PromptRecord, to title: String) {
+        Task {
+            do {
+                let stored = try await CloudHistoryStore.shared.updateTitle(id: record.id, title: title)
+                await MainActor.run {
+                    if let idx = self.folderRecords.firstIndex(where: { $0.id == record.id }) {
+                        self.folderRecords[idx].title = stored
+                    }
+                }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
+    /// Renames the open folder. The drill-in follows the new name, which may be
+    /// an existing folder this one merged into.
+    func renameFolder(to typed: String) {
+        guard let old = selectedFolder else { return }
+        Task {
+            do {
+                let stored = try await CloudHistoryStore.shared.renameFolder(from: old, to: typed)
+                await MainActor.run { self.openFolder(stored) }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
     }
 
     func toggleExpand(_ id: String) { expandedIDs.toggle(id) }

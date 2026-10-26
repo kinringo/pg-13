@@ -12,6 +12,8 @@ struct FoldersView: View {
     @EnvironmentObject var appState: AppState
     @ObservedObject private var auth = AuthService.shared
     @StateObject private var exporter = MarkdownExporter()
+    @State private var showRenameFolder = false
+    @State private var renameFolderText = ""
 
     var body: some View {
         VStack(spacing: 0) {
@@ -66,7 +68,7 @@ struct FoldersView: View {
             BackBar(backLabel: "Folders",
                     title: vm.selectedFolder ?? "",
                     trailingLabel: vm.folderRecords.isEmpty ? nil : "MD",
-                    onBack: { vm.back() },
+                    onBack: { showRenameFolder = false; vm.back() },
                     onTrailing: {
                         exporter.export(
                             Markdown.collection(title: vm.selectedFolder ?? "Folder",
@@ -75,6 +77,22 @@ struct FoldersView: View {
                                                         prefix: "pg13-folder"))
                     })
                 .padding(.horizontal, QM.Space.s20)
+
+            if showRenameFolder {
+                InlineInput(placeholder: "New folder name...", text: $renameFolderText,
+                            actionLabel: "Save") {
+                    guard !renameFolderText.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+                    vm.renameFolder(to: renameFolderText)
+                    showRenameFolder = false
+                }
+                .padding(.horizontal, QM.Space.s20)
+            } else {
+                TextLink(label: "Rename folder", color: QM.textAccentTeal) {
+                    renameFolderText = vm.selectedFolder ?? ""
+                    showRenameFolder = true
+                }
+                .padding(.horizontal, QM.Space.s20)
+            }
 
             if !exporter.errorMessage.isEmpty {
                 FormMessage(text: exporter.errorMessage, kind: .error)
@@ -106,7 +124,8 @@ struct FoldersView: View {
                                 onSetFolder:       { vm.setFolder(record, folder: $0) },
                                 onShowFolderInput: { vm.toggleFolderInput(record.id) },
                                 onUse:             { appState.open(record) },
-                                onRemoveFromFolder: { vm.setFolder(record, folder: nil) }
+                                onRemoveFromFolder: { vm.setFolder(record, folder: nil) },
+                                onRename:          { vm.rename(record, to: $0) }
                             )
                         }
                     }
