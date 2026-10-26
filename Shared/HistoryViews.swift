@@ -308,11 +308,11 @@ struct HistoryItemView: View {
 
     private func exportMD() {
         exporter.export(
-            Markdown.document(goal: record.goal, role: record.role,
+            Markdown.document(goal: record.goal, title: record.title, role: record.role,
                               tone: record.tone, style: record.style,
                               prompt: record.generated_prompt,
                               date: record.displayDate),
-            fileName: Markdown.fileName(for: record.goal))
+            fileName: Markdown.fileName(for: record.displayTitle))
     }
 
     @ViewBuilder var folderChips: some View {
