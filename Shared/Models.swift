@@ -54,10 +54,7 @@ struct PromptRecord: Codable, Identifiable {
 
     var recordKind: RecordKind { kind ?? .prompt }
     /// What the Saved list shows: the short title, else the goal.
-    var displayTitle: String {
-        let t = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        return t.isEmpty ? goal : t
-    }
+    var displayTitle: String { Markdown.displayName(goal: goal, title: title) }
 
     func withFolder(_ folder: String?) -> PromptRecord {
         PromptRecord(id: id, goal: goal, role: role, tone: tone, style: style,

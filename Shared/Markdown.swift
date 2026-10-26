@@ -74,7 +74,8 @@ enum Markdown {
         return line
     }
 
-    /// The title if it has text, else the goal (same rule as `PromptRecord.displayTitle`).
+    /// The title if it has text, else the goal. `PromptRecord.displayTitle`
+    /// uses this too, so the Saved list and exports always agree.
     static func displayName(goal: String, title: String?) -> String {
         let t = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return t.isEmpty ? goal : t
