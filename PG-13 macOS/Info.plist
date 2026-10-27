@@ -6,13 +6,5 @@
 	<string>PG-13</string>
 	<key>CFBundleName</key>
 	<string>PG-13</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>IBMPlexMono-Regular.ttf</string>
-		<string>IBMPlexMono-Medium.ttf</string>
-		<string>IBMPlexSans-Regular.ttf</string>
-		<string>IBMPlexSans-Medium.ttf</string>
-		<string>IBMPlexSans-Bold.ttf</string>
-	</array>
 </dict>
 </plist>
