@@ -23,12 +23,15 @@ import UniformTypeIdentifiers
 
 enum Markdown {
 
-    /// One prompt as a standalone document.
-    static func document(goal: String, role: String?, tone: String?, style: String?,
-                         prompt: String, date: String? = nil) -> String {
-        var out = "# \(heading(from: goal))\n\n"
+    /// One prompt as a standalone document. A saved title, when there is one,
+    /// becomes the heading and the goal moves into the metadata list.
+    static func document(goal: String, title: String? = nil, role: String?, tone: String?,
+                         style: String?, prompt: String, date: String? = nil) -> String {
+        let name = displayName(goal: goal, title: title)
+        var out = "# \(heading(from: name))\n\n"
         out += byline(date: date) + "\n\n"
-        if let meta = metadataList(role: role, tone: tone, style: style) {
+        if let meta = metadataList(goal: name == goal ? nil : goal,
+                                   role: role, tone: tone, style: style) {
             out += meta + "\n\n"
         }
         out += "## Prompt\n\n" + fenced(prompt) + "\n"
@@ -47,13 +50,14 @@ enum Markdown {
 
         out += "## Contents\n\n"
         for (i, r) in records.enumerated() {
-            out += "\(i + 1). [\(escapeInline(heading(from: r.goal)))](#\(anchor(for: r.goal, index: i)))\n"
+            out += "\(i + 1). [\(escapeInline(heading(from: r.displayTitle)))](#\(anchor(for: r.displayTitle, index: i)))\n"
         }
         out += "\n---\n\n"
 
         for (i, r) in records.enumerated() {
-            out += "## \(i + 1). \(heading(from: r.goal))\n\n"
-            if let meta = metadataList(role: r.role, tone: r.tone, style: r.style, date: r.displayDate) {
+            out += "## \(i + 1). \(heading(from: r.displayTitle))\n\n"
+            if let meta = metadataList(goal: r.displayTitle == r.goal ? nil : r.goal,
+                                       role: r.role, tone: r.tone, style: r.style, date: r.displayDate) {
                 out += meta + "\n\n"
             }
             out += fenced(r.generated_prompt) + "\n\n"
@@ -70,9 +74,17 @@ enum Markdown {
         return line
     }
 
-    private static func metadataList(role: String?, tone: String?, style: String?,
-                                     date: String? = nil) -> String? {
+    /// The title if it has text, else the goal. `PromptRecord.displayTitle`
+    /// uses this too, so the Saved list and exports always agree.
+    static func displayName(goal: String, title: String?) -> String {
+        let t = title?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return t.isEmpty ? goal : t
+    }
+
+    private static func metadataList(goal: String? = nil, role: String?, tone: String?,
+                                     style: String?, date: String? = nil) -> String? {
         var rows: [String] = []
+        if let g = goal,  !g.isEmpty { rows.append("- **Goal:** \(escapeInline(g))") }
         if let r = role,  !r.isEmpty { rows.append("- **Role:** \(escapeInline(r))") }
         if let t = tone,  !t.isEmpty { rows.append("- **Tone:** \(escapeInline(t))") }
         if let s = style, !s.isEmpty { rows.append("- **Output type:** \(escapeInline(s))") }
@@ -108,7 +120,7 @@ enum Markdown {
         return "\(fence)text\n\(text)\n\(fence)"
     }
 
-    /// GitHub-style anchor for the "N. Goal" heading this document emits.
+    /// GitHub-style anchor for the "N. Title" heading this document emits.
     private static func anchor(for goal: String, index: Int) -> String {
         let slug = heading(from: goal).lowercased()
             .components(separatedBy: CharacterSet.alphanumerics.union(CharacterSet(charactersIn: " -")).inverted)

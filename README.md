@@ -19,31 +19,29 @@ Built with SwiftUI. One shared codebase, two targets, no third-party dependencie
   type. It returns one prompt, not an essay about your prompt.
 - **Refine.** Ask for a change in plain language ("make it shorter", "add a
   constraint about tone") and the prompt is revised in place, versioned.
-- **Save and organise.** Prompts sync to your own Supabase row via email
-  sign-in. File them into folders.
-- **Docs.** A separate tab for writing whole markdown documents (README, spec,
-  runbook, how-to, brief, meeting notes, case study, changelog) from a short
-  brief: subject, audience, required sections, depth. Edit the source, flip to
-  a rendered preview, revise in plain language, export.
-- **Lint the result.** The Docs tab checks the document before it ships: em and
-  en dashes, unclosed code fences, missing or duplicated H1, skipped heading
-  levels, and leftover placeholders. Dashes have a one-click fix. Word count,
-  heading count, reading time, and an outline sit above the editor.
-- **Export markdown.** Any single prompt, an entire folder, your whole
-  library, or a Docs document, as a formatted `.md` file.
-- **Light and dark.** Both themes ship, toggled from the header.
+- **Skills.** A second tab turns a name, what the skill does, and its steps
+  and rules into a `SKILL.md` file for an AI agent: YAML frontmatter, then
+  numbered steps and rules. Refine, save and export it the same way.
+- **Save and organise.** Prompts and skills sync to your own Supabase rows via
+  email sign-in, each with a short title Claude suggests. File them into
+  folders, and rename items or folders at any time.
+- **Export markdown.** Any single prompt or skill, an entire folder, or your
+  whole library, as a formatted `.md` file headed by its title.
+- **Light and dark.** Both themes ship, toggled from Profile.
 
 ## Layout
 
 ```
 Shared/              cross-platform: models, services, view models, all views
-  AppState.swift       view models, prompt construction
+  AppState.swift       view models, prompt and skill construction
   Services.swift       Claude API, Supabase auth, cloud + local history stores
-  Markdown.swift       document builder, linter, export controller, Docs tab
-  DesignSystem.swift   QM design tokens, buttons, flow layout
-  GenerateView.swift   the generate tab
-  HistoryViews.swift   auth gate, history list, per-row actions
+  AppShell.swift       header, tabs, and Profile (sign-in, account, theme)
+  GenerateView.swift   the Prompt and Skill tabs
+  HistoryViews.swift   saved list and per-row actions
   FolderViews.swift    folder list and drill-down
+  Components.swift     one SwiftUI view per Figma component
+  DesignSystem.swift   QM design tokens and fonts
+  Markdown.swift       markdown export (plus the retired Docs tab, unused)
   PlatformFields.swift AppKit and UIKit text field bridges
   KeychainHelper.swift Keychain read/write
   Models.swift         PromptRecord, ServiceError, Anthropic request/response
@@ -54,7 +52,7 @@ PG-13 iOS/           iOS target: tab-bar shell
 
 ## Running it
 
-Requires Xcode 15 or later.
+Requires Xcode 26 or later (the project defaults to MainActor isolation).
 
 ```bash
 open PG-13.xcodeproj
@@ -88,7 +86,9 @@ The project ships a Supabase project URL and a **publishable** anon key in
 `Shared/Services.swift`. That key is designed to be client-side and carries no
 privileges on its own: every row is protected by row-level security keyed to
 `auth.uid()`, and the app authenticates with a per-user JWT. Point it at your
-own project by editing `SupabaseConfig`, with a table:
+own project by editing `SupabaseConfig`, with a table (then run
+`supabase/kind.sql` and `supabase/title.sql` for the `kind` and `title`
+columns):
 
 ```sql
 create table prompt_history (
@@ -124,16 +124,16 @@ every row to every client.
 
 ## Design
 
-PG-13 uses the "Quiet Machinery" token set: monospace type, square corners,
-hairline borders, cyan and magenta accents on near-black or cream. Tokens live
-in `DesignSystem.swift` as `QM`. Colours are declared once as adaptive pairs so
-both themes come from one definition.
+Screens follow the Figma file "prompt-generator". Its variables map one to one
+onto `enum QM` in `DesignSystem.swift` (`background/screen` becomes
+`QM.screen`, and so on), with light and dark values from the Figma modes.
+Type is JetBrains Mono, Space Mono and Geist Mono, bundled and registered at
+launch.
 
 ## Known gaps
 
-- The five bundled IBM Plex font files are not currently loaded. Type falls back
-  to the system monospace face.
-- History loads the 50 most recent prompts, with no pagination past that.
+- The Saved list shows the 50 most recent items, with no pagination past that.
+  Export All still includes everything.
 - Sign-up works with email confirmation either on or off. With it on (the
   default for a new project) the app tells you to click the link and sign in,
   rather than trying to sign you in on the spot.
@@ -141,16 +141,13 @@ both themes come from one definition.
   sign-up all fail until the project is resumed from the Supabase dashboard.
   The app names that specifically rather than surfacing a DNS error, and a
   scheduled ping (see ARCHITECTURE.md) keeps the project awake.
-- Docs holds one draft at a time, saved locally, not synced. The
-  `prompt_history` table is shaped for prompts, and filing documents in it
-  would mean abusing that schema. Export the document, or copy it out.
-- The Docs preview renders headings, lists, quotes, rules, and code blocks.
-  Tables show as raw markdown source.
+- Nothing checks Claude's output against the rules it was given (no em
+  dashes, frontmatter shape, line limits). They are instructions only.
 
 ## Licence
 
 Personal project, published to be read rather than reused. All rights reserved
 on the source.
 
-The bundled IBM Plex font files are not mine. IBM Plex is licensed by IBM under
-the SIL Open Font License 1.1: https://github.com/IBM/plex
+The bundled fonts are not mine. JetBrains Mono, Space Mono and Geist Mono are
+each licensed under the SIL Open Font License 1.1.

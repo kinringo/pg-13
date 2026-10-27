@@ -146,7 +146,8 @@ class GenerateViewModel: ObservableObject {
         // The title call makes a save take a second or two; without this a
         // second tap in that gap saved the prompt twice.
         guard !isSaving else { return }
-        isSaving = true; errorMessage = ""; savedMessage = "Saving..."
+        isSaving = true; errorMessage = ""
+        savedMessageClear?.cancel(); savedMessage = "Saving..."
         let (goal, role, tone) = (self.goal, self.role, selectedTone)
         let (style, prompt) = (selectedOutputType, generatedPrompt)
         Task {
@@ -160,8 +161,7 @@ class GenerateViewModel: ObservableObject {
                     title: title)
                 await MainActor.run {
                     self.isSaving = false
-                    self.savedMessage = stored.map { "Saved to \"\($0)\"" } ?? "Saved"
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
+                    self.showSaved(stored.map { "Saved to \"\($0)\"" } ?? "Saved")
                 }
             } catch {
                 await MainActor.run {
@@ -170,6 +170,17 @@ class GenerateViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    /// Clears the saved notice after 2 seconds. Each save cancels the last
+    /// timer, so an earlier save's timer cannot wipe a later "Saving...".
+    private var savedMessageClear: DispatchWorkItem?
+
+    private func showSaved(_ text: String) {
+        savedMessage = text
+        let clear = DispatchWorkItem { [weak self] in self?.savedMessage = "" }
+        savedMessageClear = clear
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: clear)
     }
 
     func copy() {
@@ -372,7 +383,8 @@ class SkillViewModel: ObservableObject {
     func save(folder: String?) {
         guard hasResult else { errorMessage = "Nothing to save yet."; return }
         guard !isSaving else { return }
-        isSaving = true; errorMessage = ""; savedMessage = "Saving..."
+        isSaving = true; errorMessage = ""
+        savedMessageClear?.cancel(); savedMessage = "Saving..."
         let (name, purpose, file) = (displayName, self.purpose, generated)
         Task {
             do {
@@ -381,8 +393,7 @@ class SkillViewModel: ObservableObject {
                     prompt: file, folder: folder, kind: .skill)
                 await MainActor.run {
                     self.isSaving = false
-                    self.savedMessage = stored.map { "Saved to \"\($0)\"" } ?? "Saved"
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 2) { self.savedMessage = "" }
+                    self.showSaved(stored.map { "Saved to \"\($0)\"" } ?? "Saved")
                 }
             } catch {
                 await MainActor.run {
@@ -391,6 +402,17 @@ class SkillViewModel: ObservableObject {
                 }
             }
         }
+    }
+
+    /// Clears the saved notice after 2 seconds. Each save cancels the last
+    /// timer, so an earlier save's timer cannot wipe a later "Saving...".
+    private var savedMessageClear: DispatchWorkItem?
+
+    private func showSaved(_ text: String) {
+        savedMessage = text
+        let clear = DispatchWorkItem { [weak self] in self?.savedMessage = "" }
+        savedMessageClear = clear
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: clear)
     }
 
     func copy() {
