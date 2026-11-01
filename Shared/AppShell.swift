@@ -31,8 +31,7 @@ struct AppShell: View {
         switch AppTab(rawValue: appState.activeTab) ?? .prompt {
         case .prompt:  GenerateView(vm: appState.generateVM)
         case .skill:   SkillView(vm: appState.skillVM)
-        case .history: HistoryView()
-        case .folders: FoldersView()
+        case .saved:   SavedView()
         case .profile: ProfileView()
         }
     }

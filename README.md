@@ -37,8 +37,8 @@ Shared/              cross-platform: models, services, view models, all views
   Services.swift       Claude API, Supabase auth, cloud + local history stores
   AppShell.swift       header, tabs, and Profile (sign-in, account, theme)
   GenerateView.swift   the Prompt and Skill tabs
-  HistoryViews.swift   saved list and per-row actions
-  FolderViews.swift    folder list and drill-down
+  HistoryViews.swift   one saved record and its per-row actions
+  FolderViews.swift    the SAVED tab: folder list (General first) and drill-down
   Components.swift     one SwiftUI view per Figma component
   DesignSystem.swift   QM design tokens and fonts
   Markdown.swift       markdown export (plus the retired Docs tab, unused)
@@ -79,8 +79,9 @@ Get a key at [console.anthropic.com](https://console.anthropic.com/).
 
 ### Supabase sync
 
-History and folders are optional. Without signing in, the app generates and
-exports fine, and the History and Folders tabs show a sign-in gate.
+Saved prompts and folders are optional. Without signing in, the app generates
+and exports fine, and the SAVED tab shows a sign-in gate. A prompt saved
+without a folder lands in General, the default folder, until you move it.
 
 The project ships a Supabase project URL and a **publishable** anon key in
 `Shared/Services.swift`. That key is designed to be client-side and carries no

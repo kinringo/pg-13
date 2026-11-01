@@ -161,7 +161,7 @@ class GenerateViewModel: ObservableObject {
                     title: title)
                 await MainActor.run {
                     self.isSaving = false
-                    self.showSaved(stored.map { "Saved to \"\($0)\"" } ?? "Saved")
+                    self.showSaved("Saved to \"\(DefaultFolder.display(stored))\"")
                 }
             } catch {
                 await MainActor.run {
@@ -393,7 +393,7 @@ class SkillViewModel: ObservableObject {
                     prompt: file, folder: folder, kind: .skill)
                 await MainActor.run {
                     self.isSaving = false
-                    self.showSaved(stored.map { "Saved to \"\($0)\"" } ?? "Saved")
+                    self.showSaved("Saved to \"\(DefaultFolder.display(stored))\"")
                 }
             } catch {
                 await MainActor.run {
@@ -469,87 +469,13 @@ class SkillViewModel: ObservableObject {
     ].joined(separator: " ")
 }
 
-// MARK: - HistoryViewModel
+// MARK: - SavedViewModel
 
-class HistoryViewModel: ObservableObject {
-    @Published var records: [PromptRecord] = []
-    @Published var isLoading = false
-    @Published var errorMessage = ""
-    @Published var expandedIDs: Set<String> = []
-    @Published var folderInputID: String? = nil
-    @Published var folderInputText = ""
-    @Published var folderNames: [String] = []
-
-    func load() {
-        isLoading = true; errorMessage = ""
-        Task {
-            async let r = CloudHistoryStore.shared.fetchHistory()
-            async let f = CloudHistoryStore.shared.fetchFolderNames()
-            do {
-                let (records, folders) = try await (r, f)
-                await MainActor.run {
-                    self.records = records
-                    self.folderNames = folders.map { $0.name }
-                    self.isLoading = false
-                }
-            } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription; self.isLoading = false }
-            }
-        }
-    }
-
-    func toggleExpand(_ id: String) { expandedIDs.toggle(id) }
-
-    func delete(_ record: PromptRecord) {
-        Task {
-            do {
-                try await CloudHistoryStore.shared.delete(id: record.id)
-                await MainActor.run { self.records.removeAll { $0.id == record.id } }
-            } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription }
-            }
-        }
-    }
-
-    func setFolder(_ record: PromptRecord, folder: String?) {
-        Task {
-            do {
-                let stored = try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
-                await MainActor.run {
-                    if let idx = self.records.firstIndex(where: { $0.id == record.id }) {
-                        self.records[idx] = self.records[idx].withFolder(stored)
-                    }
-                    self.folderInputID = nil; self.folderInputText = ""
-                    if let f = stored, !self.folderNames.contains(f) {
-                        self.folderNames.append(f)
-                        self.folderNames.sort { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
-                    }
-                }
-            } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription }
-            }
-        }
-    }
-
-    func rename(_ record: PromptRecord, to title: String) {
-        Task {
-            do {
-                let stored = try await CloudHistoryStore.shared.updateTitle(id: record.id, title: title)
-                await MainActor.run {
-                    if let idx = self.records.firstIndex(where: { $0.id == record.id }) {
-                        self.records[idx].title = stored
-                    }
-                }
-            } catch {
-                await MainActor.run { self.errorMessage = error.localizedDescription }
-            }
-        }
-    }
-}
-
-// MARK: - FoldersViewModel
-
-class FoldersViewModel: ObservableObject {
+/// The SAVED tab (Figma 191:2968): the folder list with General pinned first,
+/// and the records of the folder that is open. General holds every record
+/// with no folder (see `DefaultFolder`).
+class SavedViewModel: ObservableObject {
+    @Published var generalCount = 0
     @Published var folders: [(name: String, count: Int)] = []
     @Published var selectedFolder: String? = nil
     @Published var folderRecords: [PromptRecord] = []
@@ -559,14 +485,22 @@ class FoldersViewModel: ObservableObject {
     @Published var folderInputID: String? = nil
     @Published var folderInputText = ""
 
+    /// Real folders a record can be filed into. General is left out: leaving
+    /// a folder (REMOVE) is how a record goes back to General.
     var folderNames: [String] { folders.map { $0.name } }
+    var totalCount: Int { generalCount + folders.reduce(0) { $0 + $1.count } }
+    var isGeneralOpen: Bool { selectedFolder.map { DefaultFolder.isGeneral($0) } ?? false }
 
     func loadFolders() {
         isLoading = true; errorMessage = ""
         Task {
             do {
-                let result = try await CloudHistoryStore.shared.fetchFolderNames()
-                await MainActor.run { self.folders = result; self.isLoading = false }
+                let result = try await CloudHistoryStore.shared.fetchFolderCounts()
+                await MainActor.run {
+                    self.generalCount = result.general
+                    self.folders = result.folders
+                    self.isLoading = false
+                }
             } catch {
                 await MainActor.run { self.errorMessage = error.localizedDescription; self.isLoading = false }
             }
@@ -574,10 +508,13 @@ class FoldersViewModel: ObservableObject {
     }
 
     func openFolder(_ name: String) {
-        selectedFolder = name; isLoading = true; errorMessage = ""
+        selectedFolder = DefaultFolder.isGeneral(name) ? DefaultFolder.name : name
+        isLoading = true; errorMessage = ""
         Task {
             do {
-                let result = try await CloudHistoryStore.shared.fetchFolder(name)
+                let result = DefaultFolder.isGeneral(name)
+                    ? try await CloudHistoryStore.shared.fetchGeneral()
+                    : try await CloudHistoryStore.shared.fetchFolder(name)
                 await MainActor.run { self.folderRecords = result; self.isLoading = false }
             } catch {
                 await MainActor.run { self.errorMessage = error.localizedDescription; self.isLoading = false }
@@ -590,15 +527,17 @@ class FoldersViewModel: ObservableObject {
         loadFolders()
     }
 
-    /// Files the record elsewhere, or out of every folder with nil. Either way
+    /// Files the record elsewhere, or back into General with nil. Either way
     /// it leaves the folder that is open.
     func setFolder(_ record: PromptRecord, folder: String?) {
         Task {
             do {
                 let stored = try await CloudHistoryStore.shared.updateFolder(id: record.id, folder: folder)
                 await MainActor.run {
-                    if stored != self.selectedFolder {
+                    if DefaultFolder.display(stored) != self.selectedFolder {
                         self.folderRecords.removeAll { $0.id == record.id }
+                    } else if let idx = self.folderRecords.firstIndex(where: { $0.id == record.id }) {
+                        self.folderRecords[idx] = self.folderRecords[idx].withFolder(stored)
                     }
                     self.folderInputID = nil; self.folderInputText = ""
                 }
@@ -639,9 +578,10 @@ class FoldersViewModel: ObservableObject {
     }
 
     /// Renames the open folder. The drill-in follows the new name, which may be
-    /// an existing folder this one merged into.
+    /// an existing folder this one merged into, or General. General itself
+    /// cannot be renamed.
     func renameFolder(to typed: String) {
-        guard let old = selectedFolder else { return }
+        guard let old = selectedFolder, !DefaultFolder.isGeneral(old) else { return }
         Task {
             do {
                 let stored = try await CloudHistoryStore.shared.renameFolder(from: old, to: typed)
