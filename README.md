@@ -24,7 +24,8 @@ Built with SwiftUI. One shared codebase, two targets, no third-party dependencie
   numbered steps and rules. Refine, save and export it the same way.
 - **Save and organise.** Prompts and skills sync to your own Supabase rows via
   email sign-in, each with a short title Claude suggests. File them into
-  folders, and rename items or folders at any time.
+  folders, rename items or folders at any time, and delete a folder you no
+  longer need (General stays).
 - **Export markdown.** Any single prompt or skill, an entire folder, or your
   whole library, as a formatted `.md` file headed by its title.
 - **Light and dark.** Both themes ship, toggled from Profile.

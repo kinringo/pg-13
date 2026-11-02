@@ -87,7 +87,7 @@ struct HistoryItemView: View {
                 }
             }
         }
-        // Figma List row / Saved Item: an outlined card, 16 side padding,
+        // Figma List/Item Type=Saved Item: an outlined card, 16 side padding,
         // 8 above and below, radius/window corners.
         .padding(.horizontal, QM.Space.s16)
         .padding(.vertical, QM.Space.s8)

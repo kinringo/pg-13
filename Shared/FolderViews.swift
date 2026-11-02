@@ -106,7 +106,7 @@ struct SavedView: View {
 
     var drillView: some View {
         VStack(spacing: QM.Space.s16) {
-            HStack(spacing: 5) {
+            HStack(spacing: QM.Space.s5) {
                 BackBar(backLabel: "Saved",
                         title: vm.selectedFolder ?? "",
                         trailingLabel: vm.folderRecords.isEmpty ? nil : "MD",

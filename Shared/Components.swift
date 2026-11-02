@@ -1,6 +1,6 @@
 // Components.swift — Shared (macOS + iOS)
 //
-// One SwiftUI view per Figma component in "21 · Global Components" > Section 1.
+// One SwiftUI view per Figma component in "21 · Global Components" (Forms & Lists, Navigation).
 // Each type names the Figma component it implements.
 
 import SwiftUI
@@ -41,11 +41,11 @@ struct WindowHeader: View {
 #endif
 }
 
-// MARK: - Navigation/Primary Tabs
+// MARK: - Navigation/Menu
 
 /// Tab order matches AppState.activeTab.
 enum AppTab: Int, CaseIterable, Identifiable {
-    /// Figma menu (436:694) "Active": PROMPT, SKILL, SAVED, PROFILE. SAVED holds
+    /// Figma Navigation/Menu (436:694) "Active": PROMPT, SKILL, SAVED, PROFILE. SAVED holds
     /// what used to be the separate History and Folders tabs.
     case prompt = 0, skill, saved, profile
     var id: Int { rawValue }
@@ -59,7 +59,7 @@ enum AppTab: Int, CaseIterable, Identifiable {
     }
 }
 
-/// Figma menu (436:694). The tabs sit on the right of the strip, 8 apart.
+/// Figma Navigation/Menu (436:694). The tabs sit on the right of the strip, 8 apart.
 /// Inactive: an 80x22 box with a border/header outline, Label/Control in
 /// text/secondary. Active: a 90x25 box in background/screen, outlined on three
 /// sides in annotation/recovery and open at the bottom, Label/Section in
@@ -717,7 +717,7 @@ struct FolderRow: View {
 
 // MARK: - List/Saved Item (header)
 
-/// Collapsed (Figma List, Folder Row layout): name, then the PROMPT / SKILL badge.
+/// Collapsed (Figma List/Item, Type=Folder Row layout): name, then the PROMPT / SKILL badge.
 /// The pencil sits beside it in HistoryItemView, since a button can't nest in a button.
 /// Expanded: name and a chevron up, then the tone and style chips.
 struct SavedItemHeader: View {
@@ -901,7 +901,7 @@ struct ScreenTitle: View {
     }
 }
 
-/// Screen intro (Figma desktop 04, 05): a centred subtitle, then divider-frame.
+/// Screen intro (Figma desktop 04, 05): a centred subtitle, then Layout/Divider.
 struct ScreenIntro: View {
     let text: String
 
@@ -937,7 +937,7 @@ struct TextLink: View {
     }
 }
 
-/// divider-frame: a hairline with 10 above and below.
+/// Layout/Divider: a hairline with 10 above and below.
 struct SectionDivider: View {
     var body: some View {
         Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
