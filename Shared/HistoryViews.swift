@@ -59,7 +59,6 @@ struct HistoryItemView: View {
                     .accessibilityLabel(editLabel)
                 }
             }
-            .padding(.horizontal, QM.Space.s10)
 
             if isExpanded {
                 PromptBox(text: record.generated_prompt, maxHeight: 200)
@@ -88,15 +87,15 @@ struct HistoryItemView: View {
                 }
             }
         }
-        // Figma List row: 16 above and below when collapsed.
-        .padding(.vertical, isExpanded ? QM.Space.s10 : QM.Space.s16)
-        .background(isHovered && !isExpanded ? QM.selected : Color.clear)
+        // Figma List row / Saved Item: an outlined card, 16 side padding,
+        // 8 above and below, radius/window corners.
+        .padding(.horizontal, QM.Space.s16)
+        .padding(.vertical, QM.Space.s8)
+        .qmBox(fill: isHovered && !isExpanded ? QM.selected : QM.control,
+               stroke: QM.borderDefault, radius: QM.Radius.window)
 #if os(macOS)
         .onHover { isHovered = $0 }
 #endif
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(QM.borderDefault).frame(height: QM.stroke)
-        }
         .padding(.horizontal, QM.Space.s20)
 #if os(iOS)
         .sheet(isPresented: $showShareSheet) {

@@ -32,14 +32,21 @@ struct GenerateView: View {
                                placeholder: "Add your odds and ends...",
                                text: $vm.extraInfo)
             }
-            .padding(.bottom, QM.Space.s10)
+            .padding(.horizontal, QM.Space.s16)
+            .padding(.vertical, QM.Space.s8)
 
             SectionDivider()
 
-            // Control/Tone + Control/Output Style
-            DropdownControl(title: "Tone", options: vm.tones, selection: $vm.selectedTone)
-            DropdownControl(title: "Output Style", options: vm.outputTypes,
-                            selection: $vm.selectedOutputType)
+            // Tone and Output: Control/Tone + Control/Output Style, 20 apart
+            VStack(spacing: QM.Space.s20) {
+                DropdownControl(title: "Tone", options: vm.tones, selection: $vm.selectedTone)
+                DropdownControl(title: "Output Style", options: vm.outputTypes,
+                                selection: $vm.selectedOutputType)
+            }
+            .padding(.horizontal, QM.Space.s16)
+            .padding(.vertical, QM.Space.s8)
+
+            SectionDivider()
 
             // Actions/Prompt Form
             ActionRow(primaryLabel: vm.isGenerating ? "Generating..." : "Generate Prompt",
@@ -119,6 +126,10 @@ struct SkillView: View {
                                placeholder: "Steps to follow, things to never do...",
                                text: $vm.steps)
             }
+            .padding(.horizontal, QM.Space.s16)
+            .padding(.top, QM.Space.s16)
+
+            SectionDivider()
 
             ActionRow(primaryLabel: vm.isGenerating ? "Generating..." : "Generate Skill",
                       isLoading: vm.isGenerating,
@@ -238,6 +249,8 @@ struct ActionRow: View {
             LargeButton(label: primaryLabel, height: 32, isLoading: isLoading, action: onPrimary)
             SmallButton(label: "Clear All", style: .share, height: 32, action: onClear)
         }
+        // Figma Actions/Prompt Form: inset 16 inside the dividers.
+        .padding(.horizontal, QM.Space.s16)
         .padding(.vertical, QM.Space.s4)
     }
 }
@@ -278,7 +291,7 @@ struct ResultSection: View {
                         .scrollContentBackground(.hidden)
                         .frame(minHeight: 155)
                         .padding(QM.Space.s4)
-                        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: 0)
+                        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: QM.Radius.sm)
                 }
             } else {
                 ResultTextArea(title: title, text: text, version: version)

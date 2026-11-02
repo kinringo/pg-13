@@ -208,7 +208,7 @@ struct FieldInput: View {
         .padding(.bottom, compact ? QM.Space.s2 : QM.Space.s8)
         .frame(maxWidth: .infinity, minHeight: compact ? InlineInput.height : nil,
                maxHeight: compact ? InlineInput.height : nil, alignment: .leading)
-        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: 0)
+        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: QM.Radius.sm)
     }
 
     private var placeholderText: Text {
@@ -254,7 +254,7 @@ struct PromptBox: View {
                 .padding(.bottom, QM.Space.s8)
         }
         .frame(minHeight: 100, maxHeight: maxHeight)
-        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: 0)
+        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: QM.Radius.sm)
     }
 }
 
@@ -396,7 +396,7 @@ struct SmallButton: View {
             .padding(.vertical, QM.Space.s2)
             .frame(maxWidth: flexible ? .infinity : nil, minHeight: height ?? 22,
                    maxHeight: height)
-            .qmBox(fill: fill, stroke: strokeColor, radius: 0)
+            .qmBox(fill: fill, stroke: strokeColor, radius: QM.Radius.sm)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -661,7 +661,7 @@ struct DropdownControl: View {
                 .padding(.bottom, QM.Space.s4)
             }
         }
-        .qmBox(fill: QM.control, stroke: QM.borderAccentTeal)
+        .qmBox(fill: QM.control, stroke: QM.borderAccentTeal, radius: QM.Radius.md)
     }
 }
 
@@ -679,7 +679,7 @@ struct FolderRow: View {
     var body: some View {
         Button(action: onTap) {
             HStack {
-                HStack(spacing: QM.Space.s16) {
+                HStack(spacing: QM.Space.s8) {
                     Image(systemName: isDefault ? "folder.fill" : "folder")
                         .font(.system(size: 17))
                         .foregroundColor(QM.iconDefault)
@@ -697,12 +697,12 @@ struct FolderRow: View {
                         .foregroundColor(QM.iconMuted)
                 }
             }
-            .padding(.horizontal, QM.Space.s10)
-            .padding(.vertical, QM.Space.s16)
-            .background(isHovered ? QM.selected : Color.clear)
-            .overlay(alignment: .bottom) {
-                Rectangle().fill(QM.borderDefault).frame(height: QM.stroke)
-            }
+            // Figma List/Folder Row: an outlined card, 16 side padding,
+            // 8 above and below, radius/window corners.
+            .padding(.horizontal, QM.Space.s16)
+            .padding(.vertical, QM.Space.s8)
+            .qmBox(fill: isHovered ? QM.selected : Color.clear,
+                   stroke: QM.borderDefault, radius: QM.Radius.window)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -811,7 +811,7 @@ struct BackBar: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Back to \(backLabel)")
             Text(title.uppercased())
-                .font(QM.navTab)
+                .font(QM.headingReference)
                 .foregroundColor(QM.textAction)
                 .lineLimit(1)
                 .frame(maxWidth: .infinity)
@@ -829,6 +829,13 @@ struct BackBar: View {
             }
         }
         .frame(minHeight: 24)
+        // Figma Navigation/Back Bar: an outlined card, 16 side padding, 4 above
+        // and below, 1pt border/window-controls stroke, radius/window corners.
+        .padding(.horizontal, QM.Space.s16)
+        .padding(.vertical, QM.Space.s4)
+        .background(RoundedRectangle(cornerRadius: QM.Radius.window).fill(QM.control))
+        .overlay(RoundedRectangle(cornerRadius: QM.Radius.window)
+            .strokeBorder(QM.borderHeader, lineWidth: 1))
     }
 }
 
@@ -838,11 +845,13 @@ struct BackBar: View {
 struct ScreenTitle: View {
     let title: String
     var subtitle: String? = nil
+    /// Heading/Screen by default; Profile (Figma 07) uses Heading/Reference.
+    var titleFont: Font = QM.headingScreen
 
     var body: some View {
         VStack(spacing: QM.Space.s4) {
             Text(title.uppercased())
-                .font(QM.headingScreen)
+                .font(titleFont)
                 .foregroundColor(QM.textPrimary)
             if let subtitle {
                 Text(subtitle)
