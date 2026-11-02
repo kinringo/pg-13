@@ -595,6 +595,16 @@ class CloudHistoryStore {
         _ = try await run(req, "Delete")
     }
 
+    /// Permanently deletes a folder and every record filed in it (Figma
+    /// delete-folder-overlay). General is never deleted.
+    func deleteFolder(_ name: String) async throws {
+        guard !DefaultFolder.isGeneral(name) else { return }
+        let req = try await makeRequest(queryItems: [
+            URLQueryItem(name: "folder", value: eq(name)),
+        ], method: "DELETE")
+        _ = try await run(req, "Delete folder")
+    }
+
     /// One-time: pushes records saved locally (pre-sync builds) to the cloud.
     /// The local file is retired only after every record is saved. Failed
     /// records stay on disk so a later sign-in can retry without dropping them.

@@ -349,7 +349,8 @@ struct SmallButton: View {
     /// - `control`: teal box, Space Mono (Export MD, Export All MD).
     /// - `label`: coral outline, JetBrains Mono 14 (REFINE, SAVE, BACK TO SIGN IN).
     /// - `share`: coral outline, Space Mono (CLEAR ALL).
-    enum Style { case control, label, share }
+    /// - `cancel`: teal outline, coral Space Mono (Small Input style: NO).
+    enum Style { case control, label, share, cancel }
 
     let label: String
     var style: Style = .control
@@ -366,12 +367,13 @@ struct SmallButton: View {
         case .control: return QM.textControl
         case .label:   return QM.textAccentCoral
         case .share:   return isHovered ? QM.textAccentCoral : QM.textControl
+        case .cancel:  return QM.textAccentCoral
         }
     }
     private var fill: Color {
         switch style {
-        case .control:        return isHovered ? QM.controlActive : QM.control
-        case .label, .share:  return isHovered ? QM.control : .clear
+        case .control, .cancel: return isHovered ? QM.controlActive : QM.control
+        case .label, .share:    return isHovered ? QM.control : .clear
         }
     }
     private var strokeColor: Color {
@@ -379,6 +381,7 @@ struct SmallButton: View {
         case .control: return QM.borderAccentTeal
         case .label:   return isHovered ? QM.borderAccentTeal : QM.borderAccentCoral
         case .share:   return isHovered ? QM.borderDefault : QM.borderAccentCoral
+        case .cancel:  return QM.borderAccentTeal
         }
     }
 
@@ -836,6 +839,39 @@ struct BackBar: View {
         .background(RoundedRectangle(cornerRadius: QM.Radius.window).fill(QM.control))
         .overlay(RoundedRectangle(cornerRadius: QM.Radius.window)
             .strokeBorder(QM.borderHeader, lineWidth: 1))
+    }
+}
+
+// MARK: - delete-folder-overlay
+
+/// Figma delete-folder-overlay (499:3232): asks before a folder and all of
+/// its contents are permanently deleted.
+struct DeleteFolderPrompt: View {
+    let onYes: () -> Void
+    let onNo: () -> Void
+
+    var body: some View {
+        VStack(spacing: QM.Space.s10) {
+            VStack(spacing: QM.Space.s16) {
+                Text("Are you certain you wish to delete this folder?")
+                    .font(QM.labelSection)
+                    .foregroundColor(QM.textPrimary)
+                Text("All contents within it will be permanently removed. To relocate an item, simply select it, click the folder icon, and choose the destination folder.")
+                    .font(QM.labelControl)
+                    .foregroundColor(QM.textSecondary)
+            }
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            HStack(spacing: QM.Space.s10) {
+                SmallButton(label: "Yes", style: .control, action: onYes)
+                SmallButton(label: "No", style: .cancel, action: onNo)
+            }
+        }
+        .padding(.horizontal, QM.Space.s16)
+        .padding(.vertical, QM.Space.s8)
+        .qmBox(fill: QM.field, stroke: QM.borderAccentTeal, radius: QM.Radius.sm)
+        .frame(maxWidth: 353)
+        .accessibilityElement(children: .contain)
     }
 }
 

@@ -16,6 +16,7 @@ struct SavedView: View {
     @State private var showRenameFolder = false
     @State private var renameFolderText = ""
     @State private var isExportingAll = false
+    @State private var showDeleteFolder = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -105,18 +106,35 @@ struct SavedView: View {
 
     var drillView: some View {
         VStack(spacing: QM.Space.s16) {
-            BackBar(backLabel: "Saved",
-                    title: vm.selectedFolder ?? "",
-                    trailingLabel: vm.folderRecords.isEmpty ? nil : "MD",
-                    onBack: { showRenameFolder = false; vm.back() },
-                    onTrailing: {
-                        exporter.export(
-                            Markdown.collection(title: vm.selectedFolder ?? "Folder",
-                                                records: vm.folderRecords),
-                            fileName: Markdown.fileName(for: vm.selectedFolder ?? "",
-                                                        prefix: "pg13-folder"))
-                    })
-                .padding(.horizontal, QM.Space.s20)
+            HStack(spacing: 5) {
+                BackBar(backLabel: "Saved",
+                        title: vm.selectedFolder ?? "",
+                        trailingLabel: vm.folderRecords.isEmpty ? nil : "MD",
+                        onBack: { showRenameFolder = false; vm.back() },
+                        onTrailing: {
+                            exporter.export(
+                                Markdown.collection(title: vm.selectedFolder ?? "Folder",
+                                                    records: vm.folderRecords),
+                                fileName: Markdown.fileName(for: vm.selectedFolder ?? "",
+                                                            prefix: "pg13-folder"))
+                        })
+                // Every folder but General can be deleted (Figma 06, 499:3198).
+                if !vm.isGeneralOpen {
+                    Button(action: { showDeleteFolder = true }) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 17, weight: .regular))
+                            .foregroundColor(QM.iconDefault)
+                            .frame(width: 36, height: 36)
+                            .qmBox(fill: QM.control, stroke: QM.borderAccentCoral,
+                                   radius: QM.Radius.sm)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .help("Delete folder")
+                    .accessibilityLabel("Delete folder")
+                }
+            }
+            .padding(.horizontal, QM.Space.s20)
 
             // General cannot be renamed.
             if !vm.isGeneralOpen {
@@ -162,6 +180,20 @@ struct SavedView: View {
                 recordList
             }
         }
+        .overlay {
+            if showDeleteFolder {
+                ZStack {
+                    QM.screen.opacity(0.85)
+                        .ignoresSafeArea()
+                        .onTapGesture { showDeleteFolder = false }
+                    DeleteFolderPrompt(
+                        onYes: { showDeleteFolder = false; showRenameFolder = false; vm.deleteFolder() },
+                        onNo: { showDeleteFolder = false })
+                        .padding(.horizontal, QM.Space.s20)
+                }
+            }
+        }
+        .onChangeCompat(of: vm.selectedFolder) { _ in showDeleteFolder = false }
     }
 
     @ViewBuilder var recordList: some View {
