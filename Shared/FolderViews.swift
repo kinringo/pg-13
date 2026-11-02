@@ -86,7 +86,8 @@ struct SavedView: View {
             } else {
                 ScrollView {
                     VStack(spacing: QM.Space.s16) {
-                        ScreenIntro(text: "Prompts and Skills saved to folders.")
+                        PageHeader(title: "Folders",
+                                   subtitle: "Saved prompts are stored in the general folder by default. To move them, click the folder icon next to the prompt.")
                         if vm.totalCount > 0 { collectionBar }
                         // General is the default folder: always present, always first.
                         FolderRow(name: DefaultFolder.name, count: vm.generalCount, isDefault: true) {
@@ -106,7 +107,7 @@ struct SavedView: View {
 
     var drillView: some View {
         VStack(spacing: QM.Space.s16) {
-            HStack(spacing: 5) {
+            HStack(spacing: QM.Space.s5) {
                 BackBar(backLabel: "Saved",
                         title: vm.selectedFolder ?? "",
                         trailingLabel: vm.folderRecords.isEmpty ? nil : "MD",

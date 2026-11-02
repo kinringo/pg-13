@@ -1,6 +1,6 @@
 // Components.swift — Shared (macOS + iOS)
 //
-// One SwiftUI view per Figma component in "21 · Global Components" > Section 1.
+// One SwiftUI view per Figma component in "21 · Global Components" (Forms & Lists, Navigation).
 // Each type names the Figma component it implements.
 
 import SwiftUI
@@ -41,11 +41,11 @@ struct WindowHeader: View {
 #endif
 }
 
-// MARK: - Navigation/Primary Tabs
+// MARK: - Navigation/Menu
 
 /// Tab order matches AppState.activeTab.
 enum AppTab: Int, CaseIterable, Identifiable {
-    /// Figma menu (436:694) "Active": PROMPT, SKILL, SAVED, PROFILE. SAVED holds
+    /// Figma Navigation/Menu (436:694) "Active": PROMPT, SKILL, SAVED, PROFILE. SAVED holds
     /// what used to be the separate History and Folders tabs.
     case prompt = 0, skill, saved, profile
     var id: Int { rawValue }
@@ -59,7 +59,7 @@ enum AppTab: Int, CaseIterable, Identifiable {
     }
 }
 
-/// Figma menu (436:694). The tabs sit on the right of the strip, 8 apart.
+/// Figma Navigation/Menu (436:694). The tabs sit on the right of the strip, 8 apart.
 /// Inactive: an 80x22 box with a border/header outline, Label/Control in
 /// text/secondary. Active: a 90x25 box in background/screen, outlined on three
 /// sides in annotation/recovery and open at the bottom, Label/Section in
@@ -717,7 +717,7 @@ struct FolderRow: View {
 
 // MARK: - List/Saved Item (header)
 
-/// Collapsed (Figma List, Folder Row layout): name, then the PROMPT / SKILL badge.
+/// Collapsed (Figma List/Item, Type=Folder Row layout): name, then the PROMPT / SKILL badge.
 /// The pencil sits beside it in HistoryItemView, since a button can't nest in a button.
 /// Expanded: name and a chevron up, then the tone and style chips.
 struct SavedItemHeader: View {
@@ -877,17 +877,16 @@ struct DeleteFolderPrompt: View {
 
 // MARK: - Screen title block (Heading/Screen + body)
 
-/// The Auth Header block on Profile: centred heading and subtitle.
+/// Title block on the sign-in, confirm-email and reset screens (Figma 01,
+/// 11-13): centred Heading/Screen title and subtitle. Profile uses PageHeader.
 struct ScreenTitle: View {
     let title: String
     var subtitle: String? = nil
-    /// Heading/Screen by default; Profile (Figma 07) uses Heading/Reference.
-    var titleFont: Font = QM.headingScreen
 
     var body: some View {
         VStack(spacing: QM.Space.s4) {
             Text(title.uppercased())
-                .font(titleFont)
+                .font(QM.headingScreen)
                 .foregroundColor(QM.textPrimary)
             if let subtitle {
                 Text(subtitle)
@@ -901,20 +900,33 @@ struct ScreenTitle: View {
     }
 }
 
-/// Screen intro (Figma desktop 04, 05): a centred subtitle, then divider-frame.
-struct ScreenIntro: View {
-    let text: String
+/// Figma Layout/Page Header (591:315): an outlined card at the top of a
+/// screen, a centred title over a subtitle. Default on Prompt, Skill and
+/// Saved; Large on Profile. The copy is shown exactly as written.
+struct PageHeader: View {
+    enum Size { case `default`, large }
+    let title: String
+    let subtitle: String
+    var size: Size = .default
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text(text)
-                .font(QM.bodyPrompt)
+        VStack(spacing: QM.Space.s4) {
+            Text(title)
+                .font(size == .large ? QM.headingReference : QM.labelSection)
+                .foregroundColor(QM.textAction)
+            Text(subtitle)
+                .font(size == .large ? QM.bodyPrompt : QM.labelControl)
                 .foregroundColor(QM.textSecondary)
-                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-            SectionDivider()
         }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, QM.Space.s16)
+        .padding(.vertical, QM.Space.s8)
+        .qmBox(fill: QM.control, stroke: QM.borderHeader, radius: QM.Radius.window,
+               lineWidth: 0.75)
+        // Figma page-header frame: 16 above the card.
+        .padding(.top, QM.Space.s16)
     }
 }
 
@@ -937,7 +949,7 @@ struct TextLink: View {
     }
 }
 
-/// divider-frame: a hairline with 10 above and below.
+/// Layout/Divider: a hairline with 10 above and below.
 struct SectionDivider: View {
     var body: some View {
         Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)

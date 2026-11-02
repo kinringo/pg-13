@@ -1,6 +1,6 @@
 // AppShell.swift — Shared (macOS + iOS)
 //
-// The frame every Figma screen shares: Window/Header, Navigation/Primary Tabs,
+// The frame every Figma screen shares: Window/Header, Navigation/Menu Bar,
 // then the screen body (padding 10 top and bottom, 20 sides, 16 between groups).
 
 import SwiftUI
@@ -12,7 +12,7 @@ struct AppShell: View {
         VStack(spacing: 0) {
             WindowHeader()
             VStack(spacing: QM.Space.s16) {
-                // header-and-navigation: the tabs sit flush under the header, full width.
+                // Navigation/Header: the tabs sit flush under the header, full width.
                 PrimaryTabs(selection: $appState.activeTab)
                 screen
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -198,8 +198,7 @@ struct ProfileView: View {
     // MARK: Signed in (07)
 
     @ViewBuilder private var signedIn: some View {
-        ScreenTitle(title: "User profile", subtitle: "Edit your credentials below.",
-                    titleFont: QM.headingReference)
+        PageHeader(title: "USER PROFILE", subtitle: "Edit your credentials below.", size: .large)
         fields(passwordPlaceholder: "New password")
         VStack(spacing: QM.Space.s10) {
             messages

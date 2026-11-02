@@ -59,7 +59,7 @@ enum QM {
     static let canvas            = Color.adaptive(light: "FFFFFF", dark: "0B0B0F")
     static let screen            = Color.adaptive(light: screenHex.light, dark: screenHex.dark)
     // surface/*
-    /// Strip behind the inactive tabs (Figma header-and-navigation fill, #F6F6F2).
+    /// Strip behind the inactive tabs (Figma Navigation/Header fill, #F6F6F2).
     static let navStrip          = Color.adaptive(light: "F6F6F2", dark: "0B0B0F")
     static let windowHeader      = Color.adaptive(light: "FBE7D2", dark: "2A2138")
     static let field             = Color.adaptive(light: fieldHex.light, dark: fieldHex.dark)
@@ -94,7 +94,7 @@ enum QM {
     static let borderAccentTeal  = Color(hex: "5FBFAE")
     static let borderAccentCoral = Color(hex: "FF5C8A")
     // annotation/recovery: the active tab's outline and the tab baseline in
-    // Figma menu (436:694). Same value in light and dark.
+    // Figma Navigation/Menu (436:694). Same value in light and dark.
     static let annotationRecovery = Color(hex: "A62957")
     static let borderInput       = Color.adaptive(light: "80991060", dark: "3A2B47")
     static let borderActionSecondary = Color.adaptive(light: "80991060", dark: "FF5C8A")
@@ -127,6 +127,8 @@ enum QM {
     enum Space {
         static let s2: CGFloat = 2
         static let s4: CGFloat = 4
+        static let s5: CGFloat = 5
+        static let s7: CGFloat = 7
         static let s8: CGFloat = 8
         static let s10: CGFloat = 10
         static let s12: CGFloat = 12
@@ -206,10 +208,11 @@ enum QM {
 extension View {
     /// Fill plus a 1pt inside stroke on a rounded rectangle, the box every
     /// Figma control uses.
-    func qmBox(fill: Color, stroke: Color, radius: CGFloat = QM.Radius.sm) -> some View {
+    func qmBox(fill: Color, stroke: Color, radius: CGFloat = QM.Radius.sm,
+               lineWidth: CGFloat = QM.stroke) -> some View {
         self
             .background(RoundedRectangle(cornerRadius: radius).fill(fill))
-            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(stroke, lineWidth: QM.stroke))
+            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(stroke, lineWidth: lineWidth))
     }
 }
 
