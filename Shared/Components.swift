@@ -877,17 +877,16 @@ struct DeleteFolderPrompt: View {
 
 // MARK: - Screen title block (Heading/Screen + body)
 
-/// The Auth Header block on Profile: centred heading and subtitle.
+/// Title block on the sign-in, confirm-email and reset screens (Figma 01,
+/// 11-13): centred Heading/Screen title and subtitle. Profile uses PageHeader.
 struct ScreenTitle: View {
     let title: String
     var subtitle: String? = nil
-    /// Heading/Screen by default; Profile (Figma 07) uses Heading/Reference.
-    var titleFont: Font = QM.headingScreen
 
     var body: some View {
         VStack(spacing: QM.Space.s4) {
             Text(title.uppercased())
-                .font(titleFont)
+                .font(QM.headingScreen)
                 .foregroundColor(QM.textPrimary)
             if let subtitle {
                 Text(subtitle)
@@ -901,20 +900,33 @@ struct ScreenTitle: View {
     }
 }
 
-/// Screen intro (Figma desktop 04, 05): a centred subtitle, then Layout/Divider.
-struct ScreenIntro: View {
-    let text: String
+/// Figma Layout/Page Header (591:315): an outlined card at the top of a
+/// screen, a centred title over a subtitle. Default on Prompt, Skill and
+/// Saved; Large on Profile. The copy is shown exactly as written.
+struct PageHeader: View {
+    enum Size { case `default`, large }
+    let title: String
+    let subtitle: String
+    var size: Size = .default
 
     var body: some View {
-        VStack(spacing: 0) {
-            Text(text)
-                .font(QM.bodyPrompt)
+        VStack(spacing: QM.Space.s4) {
+            Text(title)
+                .font(size == .large ? QM.headingReference : QM.labelSection)
+                .foregroundColor(QM.textAction)
+            Text(subtitle)
+                .font(size == .large ? QM.bodyPrompt : QM.labelControl)
                 .foregroundColor(QM.textSecondary)
-                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-            SectionDivider()
         }
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, QM.Space.s16)
+        .padding(.vertical, QM.Space.s8)
+        .qmBox(fill: QM.control, stroke: QM.borderHeader, radius: QM.Radius.window,
+               lineWidth: 0.75)
+        // Figma page-header frame: 16 above the card.
+        .padding(.top, QM.Space.s16)
     }
 }
 

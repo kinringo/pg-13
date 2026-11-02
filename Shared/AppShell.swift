@@ -198,8 +198,7 @@ struct ProfileView: View {
     // MARK: Signed in (07)
 
     @ViewBuilder private var signedIn: some View {
-        ScreenTitle(title: "User profile", subtitle: "Edit your credentials below.",
-                    titleFont: QM.headingReference)
+        PageHeader(title: "USER PROFILE", subtitle: "Edit your credentials below.", size: .large)
         fields(passwordPlaceholder: "New password")
         VStack(spacing: QM.Space.s10) {
             messages

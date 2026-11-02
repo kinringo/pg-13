@@ -14,7 +14,10 @@ struct GenerateView: View {
     @State private var folderName = ""
 
     var body: some View {
-        ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0) {
+        ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0, spacing: QM.Space.s20) {
+
+            PageHeader(title: "Create your prompt below.",
+                       subtitle: "Make sure to include a clear goal, tone and output style for best results.")
 
             if vm.showAPIKeyField {
                 APIKeyRow(text: $vm.inlineAPIKey) { vm.saveAPIKey() }
@@ -108,7 +111,10 @@ struct SkillView: View {
     @State private var folderName = ""
 
     var body: some View {
-        ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0) {
+        ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0, spacing: QM.Space.s20) {
+
+            PageHeader(title: "Create your skill below.",
+                       subtitle: "Make sure to include a clear name and description for each skill to ensure clarity.")
 
             if vm.showAPIKeyField {
                 APIKeyRow(text: $vm.inlineAPIKey) { vm.saveAPIKey() }
@@ -198,12 +204,14 @@ struct APIKeyRow: View {
 /// changes the text on every keystroke, and each change used to scroll.
 struct ScreenScroll<Content: View>: View {
     let scrollTarget: Int
+    /// Space between groups. Figma 02 and 03 use 20.
+    var spacing: CGFloat = QM.Space.s16
     @ViewBuilder let content: () -> Content
 
     var body: some View {
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: QM.Space.s16) {
+                VStack(alignment: .leading, spacing: spacing) {
                     content()
                 }
                 .padding(.horizontal, QM.Space.s20)

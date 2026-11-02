@@ -208,10 +208,11 @@ enum QM {
 extension View {
     /// Fill plus a 1pt inside stroke on a rounded rectangle, the box every
     /// Figma control uses.
-    func qmBox(fill: Color, stroke: Color, radius: CGFloat = QM.Radius.sm) -> some View {
+    func qmBox(fill: Color, stroke: Color, radius: CGFloat = QM.Radius.sm,
+               lineWidth: CGFloat = QM.stroke) -> some View {
         self
             .background(RoundedRectangle(cornerRadius: radius).fill(fill))
-            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(stroke, lineWidth: QM.stroke))
+            .overlay(RoundedRectangle(cornerRadius: radius).strokeBorder(stroke, lineWidth: lineWidth))
     }
 }
 
