@@ -592,5 +592,19 @@ class SavedViewModel: ObservableObject {
         }
     }
 
+    /// Permanently deletes the open folder and everything in it, then goes
+    /// back to the folder list. General cannot be deleted.
+    func deleteFolder() {
+        guard let name = selectedFolder, !DefaultFolder.isGeneral(name) else { return }
+        Task {
+            do {
+                try await CloudHistoryStore.shared.deleteFolder(name)
+                await MainActor.run { self.back() }
+            } catch {
+                await MainActor.run { self.errorMessage = error.localizedDescription }
+            }
+        }
+    }
+
     func toggleExpand(_ id: String) { expandedIDs.toggle(id) }
 }
