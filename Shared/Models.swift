@@ -32,6 +32,28 @@ enum RecordKind: String, Codable {
     var title: String { rawValue.uppercased() }
 }
 
+// MARK: - DefaultFolder
+
+/// General, the default folder (Figma 191:2968, frames 04, 05 and 09). It is
+/// never stored: a record with no folder is in General, so older rows saved
+/// without one show there with no data rewrite. A stored folder spelled
+/// "General" in any case from an older build is shown as part of it too.
+enum DefaultFolder {
+    static let name = "General"
+
+    static func isGeneral(_ folder: String?) -> Bool {
+        guard let f = folder?.trimmingCharacters(in: .whitespacesAndNewlines), !f.isEmpty else {
+            return true
+        }
+        return f.caseInsensitiveCompare(name) == .orderedSame
+    }
+
+    /// The folder name to show for a stored value.
+    static func display(_ folder: String?) -> String {
+        isGeneral(folder) ? name : folder!
+    }
+}
+
 // MARK: - PromptRecord
 
 /// One saved row. For a skill, `goal` holds the skill name, `role` what it

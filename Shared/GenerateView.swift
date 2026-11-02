@@ -298,7 +298,7 @@ struct ResultSection: View {
 #endif
                         onShare()
                     }),
-                    (.save, "Save to history", false, { onSave(nil) }),
+                    (.save, "Save to General", false, { onSave(nil) }),
                     (.edit, isEditing ? "Done editing" : "Edit", isEditing, { isEditing.toggle() }),
                     (.delete, "Clear result", false, onDiscard),
                 ])

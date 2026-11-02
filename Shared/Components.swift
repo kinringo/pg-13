@@ -45,14 +45,15 @@ struct WindowHeader: View {
 
 /// Tab order matches AppState.activeTab.
 enum AppTab: Int, CaseIterable, Identifiable {
-    case prompt = 0, skill, history, folders, profile
+    /// Figma menu (436:694) "Active": PROMPT, SKILL, SAVED, PROFILE. SAVED holds
+    /// what used to be the separate History and Folders tabs.
+    case prompt = 0, skill, saved, profile
     var id: Int { rawValue }
     var title: String {
         switch self {
         case .prompt:  return "PROMPT"
         case .skill:   return "SKILL"
-        case .history: return "SAVED"
-        case .folders: return "FOLDERS"
+        case .saved:   return "SAVED"
         case .profile: return "PROFILE"
         }
     }

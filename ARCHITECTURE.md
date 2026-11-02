@@ -20,14 +20,14 @@ One tree. The two legacy trees (`/Users/mariaelena/prompt widget/`, `/Users/mari
 ```
 Design-and-Code/PG-13/
   Shared/                      ← cross-platform, both targets
-    AppState.swift             AppState + GenerateViewModel + HistoryViewModel
+    AppState.swift             AppState + GenerateViewModel + SkillViewModel + SavedViewModel
     Services.swift             ClaudeService, SupabaseConfig, AuthService, CloudHistoryStore, HistoryStore
     DesignSystem.swift         enum QM tokens (mirrors Figma), fonts, QMButton, FieldLabel, FormField
     Components.swift           one SwiftUI view per Figma component (header, tabs, fields, buttons, ...)
     AppShell.swift             shared frame: header + tabs + screen; ProfileView (sign-in, account edits, theme)
     PlatformFields.swift       QMTextField / QMTextArea wrappers
     KeychainHelper.swift       Keychain read/write + UserDefaults migration
-    Models.swift               PromptRecord, shareText(), String.capped, ServiceError, Anthropic types
+    Models.swift               PromptRecord, DefaultFolder (General), shareText(), String.capped, ServiceError, Anthropic types
     Markdown.swift             document builder, linter, MarkdownExporter; MarkdownDocViewModel and DocsView are unused since SKILL took the Docs tab
     GenerateView.swift
     HistoryViews.swift
@@ -41,12 +41,12 @@ Design-and-Code/PG-13/
 ## Architecture
 
 - **AppDelegate** (macOS only): `NSStatusBar` icon, creates the `NSPanel`, conforms to `NSWindowDelegate`.
-- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Skill, 2 History (labelled SAVED), 3 Folders, 4 Profile), `lightMode`, and the view models (`generateVM`, `skillVM`). Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
+- **AppState**: singleton `ObservableObject`. Holds `activeTab` (`AppTab`: 0 Prompt, 1 Skill, 2 Saved, 3 Profile), `lightMode`, and the view models (`generateVM`, `skillVM`). Calls `KeychainHelper.migrateFromUserDefaults` once at launch.
 - **GenerateViewModel**: role, goal, extra info, tone and output-type selection, generate and refine, copy/share/save/edit state.
 - **SkillViewModel**: the Skill tab. Name, what it does / when to use, steps and rules go to Claude with a SKILL.md system prompt (frontmatter `name` and `description`, then numbered steps and rules, no em dashes). Saves with `kind = 'skill'`: `goal` holds the name, `role` the purpose, `generated_prompt` the file. Refine, copy, share, export and save-to-folder match the Prompt tab.
 - **MarkdownDocViewModel** (unused, kept for now): the old Docs tab. Doc type, title, subject, audience, required sections, depth. Depth sets both the length rule in the system prompt and `maxTokens` (1200 / 2500 / 4000), so the two cannot drift apart. The draft autosaves to `UserDefaults` on an 800ms debounce, because the macOS panel dismisses whenever focus leaves it.
-- **HistoryViewModel**: saved prompts, expand/collapse, folder assignment.
-- **Folder views**: folder list plus drill-in.
+- **SavedViewModel** / **SavedView** (`FolderViews.swift`): the SAVED tab, which replaced the separate History and Folders tabs (Figma 191:2968). The root lists General first, then every other folder with its count, plus Export All MD. Opening a folder shows its records with expand/collapse, folder assignment, rename and delete.
+- **General** (`DefaultFolder` in `Models.swift`): the default folder. It is never stored. A record with no folder is in General, so rows saved before it existed show there with no data rewrite, and a stored "General" in any case from an older build is shown as part of it. `canonicalFolder` turns a typed "General" into null, General cannot be renamed, and REMOVE in another folder sends a record back to General.
 
 ## Services
 
@@ -189,7 +189,7 @@ keepalive: a `FAIL 000` line in its log means the project is paused.
 Carried from the 2026-07-22 audit, re-checked against the code on 2026-09-03:
 
 1. **iOS app icon.** macOS `AppIcon.appiconset` has real PNGs for every mac slot. iOS still has dark and tinted 1024 entries with no `filename`. Xcode warns; App Store / TestFlight would fail. Low stakes for a personal install. The old `broken.png` marketing slot is gone.
-2. The History folder list is fetched once per load, so a folder created on another device will not appear until reload. Cosmetic.
+2. The folder list is fetched once per load, so a folder created on another device will not appear until reload. Cosmetic.
 
 ### Fixed 2026-09-03: local migration no longer retires first
 

@@ -433,35 +433,56 @@ class CloudHistoryStore {
         ], "Load folder")
     }
 
+    /// Records in General: no folder, or a stored "General" in any case.
+    /// `ilike` without wildcards is a case-insensitive equals.
+    func fetchGeneral() async throws -> [PromptRecord] {
+        try await fetchRecords([
+            URLQueryItem(name: "or", value: "(folder.is.null,folder.ilike.\(DefaultFolder.name))"),
+            URLQueryItem(name: "order", value: "created_at.desc"),
+        ], "Load folder")
+    }
+
+    /// Real folders only, without General. See `fetchFolderCounts`.
     func fetchFolderNames() async throws -> [(name: String, count: Int)] {
+        try await fetchFolderCounts().folders
+    }
+
+    /// How many records General holds, and every other folder with its count.
+    func fetchFolderCounts() async throws -> (general: Int, folders: [(name: String, count: Int)]) {
         // Supabase returns at most 1,000 rows per request, so page through them;
         // a single request undercounted folders once there were more filed items.
         struct Row: Codable { let folder: String? }
         let page = 1000
         var counts: [String: Int] = [:]
+        var general = 0
         var offset = 0
         while true {
             let req = try await makeRequest(queryItems: [
-                URLQueryItem(name: "folder", value: "not.is.null"),
                 URLQueryItem(name: "select", value: "folder"),
                 URLQueryItem(name: "order", value: "id"),
                 URLQueryItem(name: "limit", value: String(page)),
                 URLQueryItem(name: "offset", value: String(offset)),
             ], method: "GET")
             let rows = try JSONDecoder().decode([Row].self, from: try await run(req, "Load folders"))
-            for row in rows { if let f = row.folder { counts[f, default: 0] += 1 } }
+            for row in rows {
+                if DefaultFolder.isGeneral(row.folder) { general += 1 }
+                else if let f = row.folder { counts[f, default: 0] += 1 }
+            }
             if rows.count < page { break }
             offset += page
         }
-        return counts.map { (name: $0.key, count: $0.value) }
+        let folders = counts.map { (name: $0.key, count: $0.value) }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        return (general, folders)
     }
 
-    /// The folder name to store: trimmed, nil when empty, and spelled like an
-    /// existing folder that differs only in case, so "work " files into "Work"
-    /// instead of starting a second folder.
+    /// The folder name to store: trimmed, nil when empty or General (General
+    /// is never stored, see `DefaultFolder`), and spelled like an existing
+    /// folder that differs only in case, so "work " files into "Work" instead
+    /// of starting a second folder.
     private func canonicalFolder(_ typed: String?) async throws -> String? {
-        guard let name = typed?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+        guard let name = typed?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !DefaultFolder.isGeneral(name) else {
             return nil
         }
         let existing = try await fetchFolderNames().map(\.name)
@@ -540,21 +561,31 @@ class CloudHistoryStore {
     }
 
     /// Renames a folder by moving every record in it. A new name that matches
-    /// another folder (ignoring case) merges into that folder; a change of case
-    /// alone ("work" to "Work") keeps the spelling typed. Returns the name stored.
+    /// another folder (ignoring case) merges into that folder, and "General"
+    /// moves the records into General (folder null). A change of case alone
+    /// ("work" to "Work") keeps the spelling typed. Returns the name to show.
+    /// General itself cannot be renamed.
     func renameFolder(from old: String, to typed: String) async throws -> String {
         let name = typed.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return old }
-        let target = name.caseInsensitiveCompare(old) == .orderedSame
-            ? name : (try await canonicalFolder(name) ?? name)
+        guard !name.isEmpty, !DefaultFolder.isGeneral(old) else { return old }
+        let target: String? = name.caseInsensitiveCompare(old) == .orderedSame
+            ? name : (try await canonicalFolder(name))
         guard target != old else { return old }
-        struct Body: Codable { let folder: String }
+        // Encoded by hand so General goes out as null, not as a missing key.
+        struct Body: Encodable {
+            let folder: String?
+            enum CodingKeys: String, CodingKey { case folder }
+            func encode(to encoder: Encoder) throws {
+                var c = encoder.container(keyedBy: CodingKeys.self)
+                try c.encode(folder, forKey: .folder)
+            }
+        }
         let data = try JSONEncoder().encode(Body(folder: target))
         let req = try await makeRequest(queryItems: [
             URLQueryItem(name: "folder", value: eq(old)),
         ], method: "PATCH", body: data)
         _ = try await run(req, "Rename folder")
-        return target
+        return DefaultFolder.display(target)
     }
 
     func delete(id: String) async throws {
