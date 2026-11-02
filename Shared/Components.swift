@@ -670,6 +670,9 @@ struct DropdownControl: View {
 struct FolderRow: View {
     let name: String
     let count: Int
+    /// General, the default folder: Figma List/Folder Row Type=General draws
+    /// it with a solid folder (Icon/Folder Pinned).
+    var isDefault = false
     let onTap: () -> Void
     @State private var isHovered = false
 
@@ -677,7 +680,7 @@ struct FolderRow: View {
         Button(action: onTap) {
             HStack {
                 HStack(spacing: QM.Space.s16) {
-                    Image(systemName: "folder")
+                    Image(systemName: isDefault ? "folder.fill" : "folder")
                         .font(.system(size: 17))
                         .foregroundColor(QM.iconDefault)
                     Text(name.uppercased())

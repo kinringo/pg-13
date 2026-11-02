@@ -88,7 +88,7 @@ struct SavedView: View {
                         ScreenIntro(text: "Prompts and Skills saved to folders.")
                         if vm.totalCount > 0 { collectionBar }
                         // General is the default folder: always present, always first.
-                        FolderRow(name: DefaultFolder.name, count: vm.generalCount) {
+                        FolderRow(name: DefaultFolder.name, count: vm.generalCount, isDefault: true) {
                             vm.openFolder(DefaultFolder.name)
                         }
                         ForEach(vm.folders, id: \.name) { folder in
