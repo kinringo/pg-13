@@ -84,7 +84,7 @@ struct SavedView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 ScrollView {
-                    VStack(spacing: 0) {
+                    VStack(spacing: QM.Space.s16) {
                         ScreenIntro(text: "Prompts and Skills saved to folders.")
                         if vm.totalCount > 0 { collectionBar }
                         // General is the default folder: always present, always first.
@@ -169,7 +169,8 @@ struct SavedView: View {
         List {
             ForEach(vm.folderRecords) { record in
                 item(record)
-                    .listRowInsets(EdgeInsets())
+                    // Figma: cards 16 apart.
+                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: QM.Space.s16, trailing: 0))
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -183,7 +184,7 @@ struct SavedView: View {
         .scrollContentBackground(.hidden)
 #else
         ScrollView {
-            VStack(spacing: 0) {
+            VStack(spacing: QM.Space.s16) {
                 ForEach(vm.folderRecords) { record in
                     item(record)
                         .contextMenu {
