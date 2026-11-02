@@ -59,57 +59,92 @@ enum AppTab: Int, CaseIterable, Identifiable {
     }
 }
 
-/// The active tab is Navigation/Tab (Medium 16, text/secondary) at its own width.
-/// The others are Regular 14 in text/nav-active and share the rest of the row.
+/// Figma menu (436:694). The tabs sit on the right of the strip, 8 apart.
+/// Inactive: an 80x22 box with a border/header outline, Label/Control in
+/// text/secondary. Active: a 90x25 box in background/screen, outlined on three
+/// sides in annotation/recovery and open at the bottom, Label/Section in
+/// text/control. An annotation/recovery baseline runs under the row; the
+/// active tab covers it, so the tab opens into the screen below.
 struct PrimaryTabs: View {
     @Binding var selection: Int
 
-    /// Figma Navigation/Primary Tabs: inactive labels hug (16 each side) on a strip
-    /// with a bottom hairline; the active tab fills the rest, open to the screen below.
     var body: some View {
-        // iPhone widths can't fit 16pt sides on every label; fall back to 8.
+        // The Figma row is 386pt wide, more than an iPhone SE. Narrow screens
+        // fall back to tighter gaps and boxes that hug their labels.
         ViewThatFits(in: .horizontal) {
-            row(sidePadding: QM.Space.s16)
-            row(sidePadding: QM.Space.s8)
+            row(gap: QM.Space.s8, sidePadding: QM.Space.s16, fixedWidths: true)
+            row(gap: QM.Space.s4, sidePadding: QM.Space.s8, fixedWidths: false)
         }
         .frame(maxWidth: .infinity)
         // Plain .background(Color) bleeds into the title bar and covers the header.
         .background(QM.navStrip, ignoresSafeAreaEdges: [])
     }
 
-    private func row(sidePadding: CGFloat) -> some View {
-        HStack(alignment: .bottom, spacing: 0) {
+    private func row(gap: CGFloat, sidePadding: CGFloat, fixedWidths: Bool) -> some View {
+        HStack(alignment: .bottom, spacing: gap) {
+            Spacer(minLength: 0)
             ForEach(AppTab.allCases) { tab in
-                let isActive = selection == tab.rawValue
-                Button(action: { selection = tab.rawValue }) {
-                    Text(tab.title)
-                        .font(isActive ? QM.navLabelActive : QM.navLabel)
-                        .foregroundColor(isActive ? QM.textAction : QM.textNavActive)
-                        .lineLimit(1)
-                        .fixedSize()
-                        .frame(height: 18)
-                        .padding(.horizontal, sidePadding)
-                        .padding(.vertical, QM.Space.s4)
-                        .frame(maxWidth: isActive ? .infinity : nil)
-                        .background(isActive ? QM.screen : Color.clear, ignoresSafeAreaEdges: [])
-                        .overlay {
-                            if isActive {
-                                HStack {
-                                    Rectangle().fill(QM.borderHeader).frame(width: QM.stroke)
-                                    Spacer()
-                                    Rectangle().fill(QM.borderHeader).frame(width: QM.stroke)
-                                }
-                            }
-                        }
-                        .overlay(alignment: .bottom) {
-                            if !isActive { Rectangle().fill(QM.borderHeader).frame(height: QM.stroke) }
-                        }
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityAddTraits(isActive ? .isSelected : [])
+                tabButton(tab, isActive: selection == tab.rawValue, fixedWidths: fixedWidths)
             }
         }
+        .padding(.horizontal, sidePadding)
+        .padding(.top, QM.Space.s4)
+        .background(alignment: .bottom) {
+            Rectangle().fill(QM.annotationRecovery).frame(height: QM.stroke)
+        }
+    }
+
+    private func tabButton(_ tab: AppTab, isActive: Bool, fixedWidths: Bool) -> some View {
+        Button(action: { selection = tab.rawValue }) {
+            Text(tab.title)
+                .font(isActive ? QM.labelSection : QM.labelControl)
+                .tracking(isActive ? 1 : 0)
+                .foregroundColor(isActive ? QM.textControl : QM.textSecondary)
+                .lineLimit(1)
+                .fixedSize()
+                .padding(.horizontal, isActive ? QM.Space.s4 : 3)
+                .frame(width: fixedWidths ? (isActive ? 90 : 80) : nil,
+                       height: isActive ? 25 : 22)
+                .background(TabShape(radius: QM.Radius.tab)
+                    .fill(isActive ? QM.screen : QM.canvas))
+                .overlay(TabShape(radius: QM.Radius.tab, openBottom: isActive)
+                    .strokeBorder(isActive ? QM.annotationRecovery : QM.borderHeader,
+                                  lineWidth: QM.stroke))
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(isActive ? .isSelected : [])
+    }
+}
+
+/// A box with only its top corners rounded. With `openBottom` the outline
+/// stops at the bottom corners, as on the active tab. (UnevenRoundedRectangle
+/// needs iOS 17 and macOS 14.)
+private struct TabShape: InsettableShape {
+    var radius: CGFloat
+    var openBottom = false
+    var inset: CGFloat = 0
+
+    func inset(by amount: CGFloat) -> TabShape {
+        var shape = self
+        shape.inset += amount
+        return shape
+    }
+
+    func path(in rect: CGRect) -> Path {
+        let r = rect.insetBy(dx: inset, dy: inset)
+        let corner = max(0, min(radius - inset, r.width / 2, r.height / 2))
+        // An open outline runs its sides to the very bottom edge.
+        let bottom = openBottom ? rect.maxY : r.maxY
+        var path = Path()
+        path.move(to: CGPoint(x: r.minX, y: bottom))
+        path.addArc(tangent1End: CGPoint(x: r.minX, y: r.minY),
+                    tangent2End: CGPoint(x: r.maxX, y: r.minY), radius: corner)
+        path.addArc(tangent1End: CGPoint(x: r.maxX, y: r.minY),
+                    tangent2End: CGPoint(x: r.maxX, y: bottom), radius: corner)
+        path.addLine(to: CGPoint(x: r.maxX, y: bottom))
+        if !openBottom { path.closeSubpath() }
+        return path
     }
 }
 
