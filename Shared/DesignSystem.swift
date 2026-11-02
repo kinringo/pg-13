@@ -79,7 +79,6 @@ enum QM {
     // text/*
     static let textPrimary       = Color.adaptive(light: "1D1538", dark: "F5F5F5")
     static let textSecondary     = Color.adaptive(light: "7A5E8A", dark: "C9A3FF")
-    static let textNavActive     = Color(hex: "C9A3FF")
     static let textControl       = Color.adaptive(light: "3A0420", dark: "F5F5F5")
     static let textAction        = Color.adaptive(light: "991060", dark: "F5F5F5")
     static let textOnAction      = Color(hex: "FDF3E8")
@@ -94,6 +93,9 @@ enum QM {
     static let borderDefault     = Color(hex: "7A5E8A")
     static let borderAccentTeal  = Color(hex: "5FBFAE")
     static let borderAccentCoral = Color(hex: "FF5C8A")
+    // annotation/recovery: the active tab's outline and the tab baseline in
+    // Figma menu (436:694). Same value in light and dark.
+    static let annotationRecovery = Color(hex: "A62957")
     static let borderInput       = Color.adaptive(light: "80991060", dark: "3A2B47")
     static let borderActionSecondary = Color.adaptive(light: "80991060", dark: "FF5C8A")
     // icon/*, status/*
@@ -135,6 +137,8 @@ enum QM {
         static let sm: CGFloat = 2
         static let md: CGFloat = 4
         static let window: CGFloat = 5
+        /// Top corners of the primary tabs (Figma menu 436:694).
+        static let tab: CGFloat = 5
     }
     /// stroke/default. 0.5pt draws one device pixel on Retina screens.
     static let stroke: CGFloat = 0.5
@@ -152,10 +156,6 @@ enum QM {
     static let labelSection   = Font.custom(jbBold, size: 14, relativeTo: .subheadline)
     /// Navigation/Tab: JetBrains Mono Medium 16
     static let navTab         = Font.custom(jbMedium, size: 16, relativeTo: .callout)
-    /// Navigation-Label, active tab: Geist Mono Bold 14
-    static let navLabelActive = Font.custom(geistBold, size: 14, relativeTo: .subheadline)
-    /// Navigation-Label, state=Default: Geist Mono Regular 14
-    static let navLabel       = Font.custom(geistRegular, size: 14, relativeTo: .subheadline)
     /// Body/Prompt: JetBrains Mono Regular 14
     static let bodyPrompt     = Font.custom(jbRegular, size: 14, relativeTo: .subheadline)
     /// Label/Control: Space Mono Regular 12
