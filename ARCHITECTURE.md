@@ -52,7 +52,7 @@ Design-and-Code/PG-13/
 
 `Shared/Services.swift`:
 
-- **ClaudeService**: model `claude-sonnet-5` (line 52), direct `URLSession` HTTP, `x-api-key` header, `anthropic-version: 2023-06-01`.
+- **ClaudeService**: model `claude-sonnet-5` (line 52), direct `URLSession` HTTP, `x-api-key` header, `anthropic-version: 2023-06-01`. A reply with `stop_reason` "max_tokens" throws `ServiceError.truncated` instead of being shown or saved cut off.
 - **SupabaseConfig**: `https://kxkpewnebbftderbizph.supabase.co` (line 93). Earlier docs named `lgbkozbwnilhsuvfpxnd` (post-auth project) and `mamflwiavkwybrsttwlr` (pre-auth). Neither is what ships now. The keepalive workflow reads this URL from source, so it follows a repoint automatically.
 - **AuthService**: Supabase Auth. Session stored in Keychain under `supabase_session`. `updateUser` (PUT /auth/v1/user) changes the password at once; a new email waits on Supabase's confirmation link. Password reset uses an emailed code (`recover`, then `verify` type recovery, then `PUT /user`); if the new password is rejected, the verified recovery session is kept in memory so a retry does not need a new code.
 - **CloudHistoryStore**: per-user rows with RLS. `kind` ('prompt' or 'skill', default 'prompt') was added 2026-10-24 (`supabase/kind.sql`); older builds that never send it still save prompts.
