@@ -142,6 +142,7 @@ enum ServiceError: LocalizedError {
     case notConfigured
     case notSignedIn
     case emptyResponse
+    case truncated
     case exportFailed(String)
     case emailConfirmationRequired
     case accountAlreadyExists
@@ -157,6 +158,7 @@ enum ServiceError: LocalizedError {
         case .notConfigured:               return "Sync backend not configured."
         case .notSignedIn:                 return "Sign in on Profile to save and sync."
         case .emptyResponse:               return "Claude returned nothing. Try rewording the goal."
+        case .truncated:                   return "The result was cut off before it finished. Shorten the input or pick a shorter output style, then try again."
         case .exportFailed(let why):       return "Export failed. \(why)"
         case .emailConfirmationRequired:
             return "We sent an 8-digit code to your email. Enter it to finish creating your account."
@@ -192,6 +194,8 @@ struct AnthropicResponse: Codable {
     // text is optional so non-text blocks (e.g. thinking) decode without error
     struct Content: Codable { let type: String; let text: String? }
     let content: [Content]
+    /// "max_tokens" means the reply was cut off at the cap.
+    let stop_reason: String?
 
     /// Concatenated text from all text-type blocks.
     var outputText: String {

@@ -75,6 +75,9 @@ class ClaudeService {
         } catch {
             throw ServiceError.decodingError(error)
         }
+        // Hit the max_tokens cap: the text stops mid-sentence, and would be
+        // shown, saved and exported as if it were whole.
+        if decoded.stop_reason == "max_tokens" { throw ServiceError.truncated }
         // A 200 with no text block (refusal, or a stop before any text was emitted)
         // would otherwise leave the UI sitting on an unchanged, empty result.
         let text = decoded.outputText.trimmingCharacters(in: .whitespacesAndNewlines)
