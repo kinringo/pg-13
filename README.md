@@ -129,7 +129,7 @@ every row to every client.
 Screens follow the Figma file "prompt-generator". Its variables map one to one
 onto `enum QM` in `DesignSystem.swift` (`background/screen` becomes
 `QM.screen`, and so on), with light and dark values from the Figma modes.
-Type is JetBrains Mono, Space Mono and Geist Mono, bundled and registered at
+Type is JetBrains Mono, Space Mono, Geist Mono and Manrope, bundled and registered at
 launch.
 
 ## Known gaps
@@ -151,5 +151,5 @@ launch.
 Personal project, published to be read rather than reused. All rights reserved
 on the source.
 
-The bundled fonts are not mine. JetBrains Mono, Space Mono and Geist Mono are
+The bundled fonts are not mine. JetBrains Mono, Space Mono, Geist Mono and Manrope are
 each licensed under the SIL Open Font License 1.1.

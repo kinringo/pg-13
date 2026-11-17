@@ -11,12 +11,12 @@ struct AppShell: View {
     var body: some View {
         VStack(spacing: 0) {
             WindowHeader()
-            VStack(spacing: QM.Space.s16) {
-                // Navigation/Header: the tabs sit flush under the header, full width.
-                PrimaryTabs(selection: $appState.activeTab)
-                screen
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            }
+            // Navigation/Header: the tabs sit flush under the header, full width.
+            PrimaryTabs(selection: $appState.activeTab)
+            ScreenHeading(tab: AppTab(rawValue: appState.activeTab) ?? .prompt)
+            screen
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ScreenFooter()
         }
         .background(QM.screen)
         .background(QM.canvas)
@@ -136,7 +136,7 @@ struct ProfileView: View {
                         isLoading: working == .verify) { verifyCode(email: email) }
         }
         .padding(.top, QM.Space.s8)
-        TextLink(label: working == .resend ? "Sending..." : "Resend code",
+        TextLink(label: working == .resend ? "Sending…" : "Resend code",
                  color: QM.textAccentTeal) { resendCode(email: email) }
             .disabled(working != nil)
         TextLink(label: "Back to Sign In", color: QM.textAccentCoral) {
@@ -177,7 +177,7 @@ struct ProfileView: View {
                         isLoading: working == .saveReset) { saveNewPassword(email: email) }
         }
         .padding(.top, QM.Space.s8)
-        TextLink(label: working == .sendReset ? "Sending..." : "Resend code",
+        TextLink(label: working == .sendReset ? "Sending…" : "Resend code",
                  color: QM.textAccentTeal) { sendResetCode(resend: true) }
             .disabled(working != nil)
         backToSignIn
@@ -198,14 +198,13 @@ struct ProfileView: View {
     // MARK: Signed in (07)
 
     @ViewBuilder private var signedIn: some View {
-        PageHeader(title: "USER PROFILE", subtitle: "Edit your credentials below.", size: .large)
         fields(passwordPlaceholder: "New password")
         VStack(spacing: QM.Space.s10) {
             messages
-            LargeButton(label: "Sign Out", style: .primary) { auth.signOut() }
+            LargeButton(label: "Sign out", style: .primary) { auth.signOut() }
         }
         .padding(.top, QM.Space.s8)
-        TextLink(label: working == .update ? "Saving..." : "Change Password") { updateAccount() }
+        TextLink(label: working == .update ? "Saving…" : "Change password") { updateAccount() }
             .disabled(working != nil)
         apiKeyLink
     }
@@ -213,7 +212,7 @@ struct ProfileView: View {
     /// Opens the key field on Prompt, so a saved key can be replaced before
     /// it fails, not only after a 401.
     private var apiKeyLink: some View {
-        TextLink(label: "Change Anthropic API Key", color: QM.textAccentTeal) {
+        TextLink(label: "Change Anthropic API key", color: QM.textAccentTeal) {
             appState.generateVM.showAPIKeyField = true
             appState.activeTab = AppTab.prompt.rawValue
         }

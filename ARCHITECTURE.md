@@ -23,7 +23,7 @@ Design-and-Code/PG-13/
     AppState.swift             AppState + GenerateViewModel + SkillViewModel + SavedViewModel
     Services.swift             ClaudeService, SupabaseConfig, AuthService, CloudHistoryStore, HistoryStore
     DesignSystem.swift         enum QM tokens (mirrors Figma), fonts, QMButton, FieldLabel, FormField
-    Components.swift           one SwiftUI view per Figma component (header, tabs, fields, buttons, ...)
+    Components.swift           one SwiftUI view per Figma component (header, tabs, ScreenHeading, ScreenFooter, fields, buttons, ...)
     AppShell.swift             shared frame: header + tabs + screen; ProfileView (sign-in, account edits, theme)
     PlatformFields.swift       QMTextField / QMTextArea wrappers
     KeychainHelper.swift       Keychain read/write + UserDefaults migration
@@ -35,7 +35,7 @@ Design-and-Code/PG-13/
   PG-13 macOS/
     PG13App.swift              macOS AppDelegate, NSPanel, stoplight buttons
   PG-13 iOS/PG13iOSApp.swift   iOS entry point
-  PG-13 iOS/Fonts, PG-13 macOS/Fonts   JetBrains Mono (Regular/Medium/Bold), Space Mono Regular, Geist Mono (Regular/Bold, OFL; bundled but no longer used by the tabs)
+  PG-13 iOS/Fonts, PG-13 macOS/Fonts   JetBrains Mono (Regular/Medium/Bold), Space Mono Regular, Geist Mono (Regular/Bold, bundled but no longer used by the tabs), Manrope (variable, headings and folder names). All OFL.
 ```
 
 ## Architecture
@@ -67,13 +67,24 @@ The Supabase anon key is still hardcoded, which is correct: it is the publishabl
 
 ## Design tokens
 
-`enum QM` in `Shared/DesignSystem.swift` mirrors the Figma file "prompt-generator" (`dn6XnEybPsH7QQ71yZVxXe`, page "21 · Global Components"). Each Figma variable maps to one `QM` member with the same name: `background/screen` → `QM.screen`, `text/nav-active` → `QM.textNavActive`, `border/accent-teal` → `QM.borderAccentTeal`, and so on. Light and dark values come from the Figma Light/Dark modes; hex with alpha is written AARRGGBB.
+`enum QM` in `Shared/DesignSystem.swift` mirrors the Figma file "prompt-generator" (`dn6XnEybPsH7QQ71yZVxXe`), collection **PG-13 / Workstation**. Each Figma variable maps to one `QM` member: `color/cabinet` → `QM.screen`, `color/key` → `QM.field`, `color/ink` → `QM.textPrimary` and `QM.borderInk`, and so on.
 
-- **Spacing / radius / stroke:** `QM.Space` (2, 4, 8, 10, 12, 16, 20), `QM.Radius` (sm 2, md 4, window 5), `QM.stroke` 0.5 (stroke/default; one device pixel on Retina). Figma's Spacing collection.
-- **Type:** the Figma text styles, as `Font.custom(..., relativeTo:)` so they scale with Dynamic Type: `labelSection` (also the active tab), `navTab`, `bodyPrompt`, `labelControl` (also the inactive tabs), `headingScreen`, `headingReference`, `bodyReference`. Fonts are bundled and registered at launch by `QM.registerFonts()`.
+Light values are the Figma Light mode. Dark values are derived at the same hues (300-310 structural, chroma capped at 0.12) and verified to WCAG AA; Figma now carries a Dark mode with the same values. The palette is muted vaporwave: lilac page `#F1ECF5`, plum ink `#231933`, and four **chrome** roles that do not change between themes, each with one job:
+
+| token | value | job |
+|---|---|---|
+| `chromeRose` | `#D48AAD` | where you are: title bar, current tab |
+| `chromeIce` | `#71B7C8` | the action: one primary button per screen |
+| `chromeMint` | `#91CCBB` | progress: loading |
+| `chromeCoral` | `#C06A64` | close and destructive |
+
+Chrome is light in both themes, so labels on it use `QM.textOnAction`, which stays dark and must not follow `textPrimary`.
+
+- **Spacing / radius / stroke:** `QM.Space` (2, 4, 8, 10, 12, 16, 20), `QM.Radius` (sm 6, md 6, window 8, tab 6), `QM.stroke` 2 and `QM.hairline` 1. Every drawn object carries a 2pt ink outline; the outline does the separating, which is what lets the fills stay muted. Rules and dividers use `hairline` so they separate without enclosing.
+- **Type:** the Figma text styles, as `Font.custom(..., relativeTo:)` so they scale with Dynamic Type: `labelSection` (also the active tab), `navTab`, `bodyPrompt`, `labelControl` (also the inactive tabs), `bodyReference`. Headings use Manrope: `headingDisplay` (the page heading band), `headingReference`, `headingScreen`, `headingTitle`, and `folderName` for folder and saved-item names. Manrope ships as one variable font, so its weight is set with `.weight()` rather than by picking a named file. Fonts are bundled and registered at launch by `QM.registerFonts()`.
 - **Legacy names** (`bgBase`, `accentCyan`, `textMuted`, ...) alias the new tokens so older views (Docs, Markdown preview) pick up the new palette. New code uses the Figma names.
 
-The Quiet Machinery look (zero radius, system mono, `#0D0D0D`/magenta) is retired as of the 2026-10-23 redesign. Screens follow the Figma file.
+The Quiet Machinery look (zero radius, system mono, `#0D0D0D`/magenta) is retired, as is the cream/plum palette that replaced it. Screens follow the Figma file, Workstation direction.
 
 ## Key UI components
 
@@ -86,7 +97,7 @@ The Quiet Machinery look (zero radius, system mono, `#0D0D0D`/magenta) is retire
 
 - Red: hides the panel. `windowShouldClose` returns false, then `orderOut`. Back to the menu bar.
 - Yellow: default NSPanel miniaturize.
-- Green: `zoomPanel()` toggles 500x600 compact (`AppDelegate.compactSize`, the Figma desktop frame) and 560x`min(screen height - 32, 880)` expanded. The whole frame is 500x600: the content runs under the title bar, so the frame is set directly, not the content rect.
+- Green: `zoomPanel()` toggles compact (`AppDelegate.compactSize`) and 560x`min(screen height - 32, 880)` expanded. Compact is now 500 x `min(1000, visible screen height - 24)`, matching the Workstation frames. The content runs under the title bar, so the frame is set directly, not the content rect, and `NSHostingView.sizingOptions` is cleared so the intrinsic height of the heading band and footer cannot resize the panel.
 
 ## Deployment
 

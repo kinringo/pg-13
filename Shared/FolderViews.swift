@@ -62,7 +62,7 @@ struct SavedView: View {
                 Text("\(vm.totalCount) SAVED")
                     .font(QM.labelControl).foregroundColor(QM.textSecondary)
                 Spacer()
-                SmallButton(label: isExportingAll ? "Exporting..." : "Export All MD") {
+                SmallButton(label: isExportingAll ? "Exporting…" : "Export all MD") {
                     exportAll()
                 }
                 .disabled(isExportingAll)
@@ -86,8 +86,6 @@ struct SavedView: View {
             } else {
                 ScrollView {
                     VStack(spacing: QM.Space.s16) {
-                        PageHeader(title: "Folders",
-                                   subtitle: "Saved prompts are stored in the general folder by default. To move them, click the folder icon next to the prompt.")
                         if vm.totalCount > 0 { collectionBar }
                         // General is the default folder: always present, always first.
                         FolderRow(name: DefaultFolder.name, count: vm.generalCount, isDefault: true) {

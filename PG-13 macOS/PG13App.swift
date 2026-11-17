@@ -22,7 +22,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
     private var themeObserver: Any?
 
     /// The Figma desktop frame size. Longer screens scroll inside it.
-    static let compactSize = NSSize(width: 500, height: 600)
+    /// The Workstation frames are 500 x 1000. Clamped so the panel still fits
+    /// under the menu bar on a short display.
+    static var compactSize: NSSize {
+        let available = NSScreen.main?.visibleFrame.height ?? 1000
+        return NSSize(width: 500, height: min(1000, available - 24))
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         QM.registerFonts()
@@ -51,6 +56,10 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         // not the content rect, or the title bar adds 32pt on top.
         panel.setContentSize(Self.compactSize)
         panel.setFrame(NSRect(origin: .zero, size: Self.compactSize), display: false)
+        // The heading band and footer are intrinsically sized, so without a cap
+        // the panel grows to whatever the content asks for.
+        panel.contentMaxSize = Self.compactSize
+        panel.maxSize = Self.compactSize
         panel.level = .normal
         panel.isMovableByWindowBackground = true
         panel.titleVisibility = .hidden
@@ -73,7 +82,12 @@ class AppDelegate: NSObject, NSApplicationDelegate, NSWindowDelegate {
         applyTheme(isLight: appState.lightMode, to: panel)
 
         let contentView = ContentView().environmentObject(appState)
-        panel.contentView = NSHostingView(rootView: contentView)
+        let host = NSHostingView(rootView: contentView)
+        // Without this the hosting view pushes its intrinsic height onto the
+        // panel, and the heading band plus footer make that the whole screen.
+        if #available(macOS 13.0, *) { host.sizingOptions = [] }
+        panel.contentView = host
+        panel.setContentSize(Self.compactSize)
 
         self.panel = panel
         panel.orderFront(nil)

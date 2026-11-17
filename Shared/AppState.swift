@@ -147,7 +147,7 @@ class GenerateViewModel: ObservableObject {
         // second tap in that gap saved the prompt twice.
         guard !isSaving else { return }
         isSaving = true; errorMessage = ""
-        savedMessageClear?.cancel(); savedMessage = "Saving..."
+        savedMessageClear?.cancel(); savedMessage = "Saving…"
         let (goal, role, tone) = (self.goal, self.role, selectedTone)
         let (style, prompt) = (selectedOutputType, generatedPrompt)
         Task {
@@ -173,7 +173,7 @@ class GenerateViewModel: ObservableObject {
     }
 
     /// Clears the saved notice after 2 seconds. Each save cancels the last
-    /// timer, so an earlier save's timer cannot wipe a later "Saving...".
+    /// timer, so an earlier save's timer cannot wipe a later "Saving…".
     private var savedMessageClear: DispatchWorkItem?
 
     private func showSaved(_ text: String) {
@@ -384,7 +384,7 @@ class SkillViewModel: ObservableObject {
         guard hasResult else { errorMessage = "Nothing to save yet."; return }
         guard !isSaving else { return }
         isSaving = true; errorMessage = ""
-        savedMessageClear?.cancel(); savedMessage = "Saving..."
+        savedMessageClear?.cancel(); savedMessage = "Saving…"
         let (name, purpose, file) = (displayName, self.purpose, generated)
         Task {
             do {
@@ -405,7 +405,7 @@ class SkillViewModel: ObservableObject {
     }
 
     /// Clears the saved notice after 2 seconds. Each save cancels the last
-    /// timer, so an earlier save's timer cannot wipe a later "Saving...".
+    /// timer, so an earlier save's timer cannot wipe a later "Saving…".
     private var savedMessageClear: DispatchWorkItem?
 
     private func showSaved(_ text: String) {
