@@ -16,8 +16,6 @@ struct GenerateView: View {
     var body: some View {
         ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0, spacing: QM.Space.s20) {
 
-            PageHeader(title: "Create your prompt below.",
-                       subtitle: "Make sure to include a clear goal, tone and output style for best results.")
 
             if vm.showAPIKeyField {
                 APIKeyRow(text: $vm.inlineAPIKey) { vm.saveAPIKey() }
@@ -25,13 +23,13 @@ struct GenerateView: View {
 
             // Prompt Form: Form/Field/Generator x3
             VStack(alignment: .leading, spacing: QM.Space.s10) {
-                GeneratorField(label: "Role or Background",
+                GeneratorField(label: "Role or background",
                                placeholder: "You are a designer, a cyborg, CEO, joker...",
                                text: $vm.role)
-                GeneratorField(label: "Goal / Request",
+                GeneratorField(label: "Goal / request",
                                placeholder: "Describe your goal here...",
                                text: $vm.goal, multiline: true, minHeight: 72)
-                GeneratorField(label: "Extras & Adjustments",
+                GeneratorField(label: "Extras & adjustments",
                                placeholder: "Add your odds and ends...",
                                text: $vm.extraInfo)
             }
@@ -41,10 +39,19 @@ struct GenerateView: View {
             SectionDivider()
 
             // Tone and Output: Control/Tone + Control/Output Style, 20 apart
-            VStack(spacing: QM.Space.s20) {
-                DropdownControl(title: "Tone", options: vm.tones, selection: $vm.selectedTone)
-                DropdownControl(title: "Output Style", options: vm.outputTypes,
-                                selection: $vm.selectedOutputType)
+            // Side by side as in the frames, stacked when the phone is too
+            // narrow for "Output style" to fit beside "Tone".
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: QM.Space.s12) {
+                    DropdownControl(title: "Tone", options: vm.tones, selection: $vm.selectedTone)
+                    DropdownControl(title: "Output style", options: vm.outputTypes,
+                                    selection: $vm.selectedOutputType)
+                }
+                VStack(spacing: QM.Space.s12) {
+                    DropdownControl(title: "Tone", options: vm.tones, selection: $vm.selectedTone)
+                    DropdownControl(title: "Output style", options: vm.outputTypes,
+                                    selection: $vm.selectedOutputType)
+                }
             }
             .padding(.horizontal, QM.Space.s16)
             .padding(.vertical, QM.Space.s8)
@@ -52,8 +59,10 @@ struct GenerateView: View {
             SectionDivider()
 
             // Actions/Prompt Form
-            ActionRow(primaryLabel: vm.isGenerating ? "Generating..." : "Generate Prompt",
+            ActionRow(primaryLabel: vm.isGenerating ? "Working…" : "Create prompt",
                       isLoading: vm.isGenerating,
+                      isEnabled: !vm.goal.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      hint: "Add a goal to get started.",
                       onPrimary: { vm.generate() },
                       onClear: { vm.clear(); showFolderInput = false })
 
@@ -62,7 +71,7 @@ struct GenerateView: View {
 
             // Generated Prompt
             if vm.hasResult {
-                Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
+                Rectangle().fill(QM.borderDivider).frame(height: QM.hairline)
                 ResultSection(
                     title: "Generated Result",
                     text: $vm.generatedPrompt,
@@ -113,8 +122,6 @@ struct SkillView: View {
     var body: some View {
         ScreenScroll(scrollTarget: vm.hasResult ? vm.version : 0, spacing: QM.Space.s20) {
 
-            PageHeader(title: "Create your skill below.",
-                       subtitle: "Make sure to include a clear name and description for each skill to ensure clarity.")
 
             if vm.showAPIKeyField {
                 APIKeyRow(text: $vm.inlineAPIKey) { vm.saveAPIKey() }
@@ -122,13 +129,13 @@ struct SkillView: View {
 
             // Skill Form
             VStack(alignment: .leading, spacing: QM.Space.s10) {
-                GeneratorField(label: "Skill Name",
+                GeneratorField(label: "Skill name",
                                placeholder: "e.g. weekly-status-report",
                                text: $vm.name)
-                GeneratorField(label: "What It Does / When to Use",
+                GeneratorField(label: "What the skill does",
                                placeholder: "Describe the task, and the requests that should trigger it",
                                text: $vm.purpose, multiline: true, minHeight: 150)
-                GeneratorField(label: "Steps & Rules",
+                GeneratorField(label: "Steps & rules",
                                placeholder: "Steps to follow, things to never do...",
                                text: $vm.steps)
             }
@@ -137,8 +144,10 @@ struct SkillView: View {
 
             SectionDivider()
 
-            ActionRow(primaryLabel: vm.isGenerating ? "Generating..." : "Generate Skill",
+            ActionRow(primaryLabel: vm.isGenerating ? "Working…" : "Create skill",
                       isLoading: vm.isGenerating,
+                      isEnabled: !vm.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                      hint: "Name your skill to get started.",
                       onPrimary: { vm.generate() },
                       onClear: { vm.clear(); showFolderInput = false })
 
@@ -249,13 +258,25 @@ struct ScreenScroll<Content: View>: View {
 struct ActionRow: View {
     let primaryLabel: String
     let isLoading: Bool
+    /// false when the required field is still empty: the button recedes and
+    /// the hint below says what is missing.
+    var isEnabled: Bool = true
+    var hint: String = ""
     let onPrimary: () -> Void
     let onClear: () -> Void
 
     var body: some View {
-        HStack(spacing: QM.Space.s10) {
-            LargeButton(label: primaryLabel, height: 32, isLoading: isLoading, action: onPrimary)
-            SmallButton(label: "Clear All", style: .share, height: 32, action: onClear)
+        VStack(alignment: .leading, spacing: QM.Space.s8) {
+            HStack(spacing: QM.Space.s10) {
+                LargeButton(label: primaryLabel, height: 32, isLoading: isLoading,
+                            isEnabled: isEnabled, action: onPrimary)
+                SmallButton(label: "Clear all", style: .share, height: 32, action: onClear)
+            }
+            if !isEnabled && !hint.isEmpty {
+                Text(hint)
+                    .font(QM.bodyPrompt)
+                    .foregroundColor(QM.textSecondary)
+            }
         }
         // Figma Actions/Prompt Form: inset 16 inside the dividers.
         .padding(.horizontal, QM.Space.s16)

@@ -52,58 +52,77 @@ enum QM {
 
     // MARK: Colors (Figma: Colors collection, Light / Dark)
 
-    private static let screenHex = (light: "FDF3E8", dark: "17141F")
-    private static let fieldHex  = (light: "F5F5F5",   dark: "1A1622")
+    private static let screenHex = (light: "F1ECF5", dark: "150E1C")
+    private static let fieldHex  = (light: "E2DAE9", dark: "1E1726")
 
     // background/*
-    static let canvas            = Color.adaptive(light: "FFFFFF", dark: "0B0B0F")
+    static let canvas            = Color.adaptive(light: "FBF9FD", dark: "0A0510")
     static let screen            = Color.adaptive(light: screenHex.light, dark: screenHex.dark)
+    // chrome/*. Four roles, each with exactly one job.
+    /// Where you are: the title bar and the current tab.
+    static let chromeRose        = Color(hex: "D48AAD")
+    /// The action: one primary button per screen.
+    static let chromeIce         = Color(hex: "71B7C8")
+    /// Progress: loading and in-flight states.
+    static let chromeMint        = Color(hex: "91CCBB")
+    /// Close and destructive.
+    static let chromeCoral       = Color(hex: "C06A64")
+
     // surface/*
-    /// Strip behind the inactive tabs (Figma Navigation/Header fill, #F6F6F2).
-    static let navStrip          = Color.adaptive(light: "F6F6F2", dark: "0B0B0F")
-    static let windowHeader      = Color.adaptive(light: "FBE7D2", dark: "2A2138")
+    /// Strip behind the inactive tabs.
+    static let navStrip          = Color.adaptive(light: "E2DAE9", dark: "1E1726")
+    /// Title bar. Chrome rose means "where you are", so it is fixed across themes.
+    static let windowHeader      = chromeRose
     static let field             = Color.adaptive(light: fieldHex.light, dark: fieldHex.dark)
-    static let control           = Color.adaptive(light: "0500E5FF", dark: "1A1622")
-    static let controlActive     = Color.adaptive(light: "3300E5FF", dark: "1A1622")
-    static let selected          = Color(hex: "3300E5FF")
-    static let badge             = Color(hex: "80F7D4C2")
-    /// surface/badge-prompt and surface/badge-skill (Tags component, Prompt / Skill).
-    /// Same value in light and dark.
-    static let badgePrompt       = Color(hex: "7A5E8A")
-    static let badgeSkill        = Color(hex: "60CED8")
+    static let control           = Color.adaptive(light: "FBF9FD", dark: "1E1726")
+    static let controlActive     = Color.adaptive(light: "E2DAE9", dark: "251E2E")
+    static let selected          = Color.adaptive(light: "E2DAE9", dark: "251E2E")
+    static let badge             = Color.adaptive(light: "E2DAE9", dark: "1E1726")
+    /// surface/badge-prompt and surface/badge-skill. Chrome, fixed across themes.
+    static let badgePrompt       = chromeIce
+    static let badgeSkill        = chromeMint
     // action/*
-    static let actionPrimary     = Color.adaptive(light: "991060", dark: "F03CAA")
-    /// Button/Large primary fill. Figma paints it with palette/plum-550 directly
-    /// (not through a semantic variable), so it has no dark value of its own.
-    static let buttonPrimary     = Color(hex: "7A5E8A")
+    static let actionPrimary     = Color.adaptive(light: "94436D", dark: "C0789B")
+    /// Primary button. Chrome ice: one per screen, and always outlined, because
+    /// ice alone is only 1.94 against the light page. The outline carries it.
+    static let buttonPrimary     = chromeIce
     // text/*
-    static let textPrimary       = Color.adaptive(light: "1D1538", dark: "F5F5F5")
-    static let textSecondary     = Color.adaptive(light: "7A5E8A", dark: "C9A3FF")
-    static let textControl       = Color.adaptive(light: "3A0420", dark: "F5F5F5")
-    static let textAction        = Color.adaptive(light: "991060", dark: "F5F5F5")
-    static let textOnAction      = Color(hex: "FDF3E8")
-    static let textAccentCoral   = Color(hex: "FF5C8A")
-    static let textAccentTeal    = Color(hex: "5FBFAE")
-    static let textInk           = Color(hex: "000000")
+    static let textPrimary       = Color.adaptive(light: "231933", dark: "EAE6EE")
+    static let textSecondary     = Color.adaptive(light: "615971", dark: "A399B0")
+    static let textControl       = Color.adaptive(light: "231933", dark: "EAE6EE")
+    static let textAction        = Color.adaptive(light: "94436D", dark: "C0789B")
+    /// Labels on a chrome fill. Chrome is light in both themes, so this stays
+    /// dark: 7.40 on ice, 9.19 on mint, 6.39 on rose.
+    static let textOnAction      = Color(hex: "231933")
+    static let textAccentCoral   = chromeCoral
+    static let textAccentTeal    = Color(hex: "64B3C0")
+    /// Figma color/ink: the text colour, so it has to follow the theme. Fixed
+    /// dark put the folder count at 1.04 on the dark badge.
+    static let textInk           = Color.adaptive(light: "231933", dark: "EAE6EE")
+    /// Disabled label. Deliberately under 4.5 (3.16 light, 3.13 dark): hitting
+    /// the body threshold would make a dead control look live.
+    static let textDisabled      = Color.adaptive(light: "87848E", dark: "65616D")
     // border/*
-    static let borderWindow      = Color.adaptive(light: "80991060", dark: "2A2138")
-    static let borderHeader      = Color.adaptive(light: "80991060", dark: "3A2B47")
-    static let borderDivider     = Color.adaptive(light: "1D1538", dark: "3A2B47")
-    static let borderDividerStrong = Color.adaptive(light: "681ABB", dark: "3A2B47")
-    static let borderDefault     = Color(hex: "7A5E8A")
-    static let borderAccentTeal  = Color(hex: "5FBFAE")
-    static let borderAccentCoral = Color(hex: "FF5C8A")
-    // annotation/recovery: the active tab's outline and the tab baseline in
-    // Figma Navigation/Menu (436:694). Same value in light and dark.
-    static let annotationRecovery = Color(hex: "A62957")
-    static let borderInput       = Color.adaptive(light: "80991060", dark: "3A2B47")
-    static let borderActionSecondary = Color.adaptive(light: "80991060", dark: "FF5C8A")
+    /// The outline that every drawn object carries. Ink, so it reads against
+    /// any chrome fill: 14.35 on the page, 6.39 on rose, 7.40 on ice.
+    static let borderInk         = Color.adaptive(light: "231933", dark: "EAE6EE")
+    static let borderWindow      = borderInk
+    static let borderHeader      = borderInk
+    static let borderDivider     = Color.adaptive(light: "7D778A", dark: "746E81")
+    static let borderDividerStrong = Color.adaptive(light: "231933", dark: "EAE6EE")
+    static let borderDefault     = borderInk
+    static let borderAccentTeal  = borderInk
+    static let borderAccentCoral = chromeCoral
+    // annotation/recovery: the active tab outline and the tab baseline.
+    static let annotationRecovery = Color.adaptive(light: "94436D", dark: "C0789B")
+    static let borderInput       = borderInk
+    static let borderActionSecondary = borderInk
     // icon/*, status/*
-    static let iconDefault       = Color(hex: "5FBFAE")
-    static let iconMuted         = Color(hex: "7A5E8A")
-    static let windowClose       = Color(hex: "F03CAA")
-    static let windowMinimize    = Color(hex: "F0D020")
-    static let windowExpand      = Color(hex: "40D080")
+    static let iconDefault       = chromeIce
+    static let iconMuted         = Color.adaptive(light: "615971", dark: "A399B0")
+    static let windowClose       = chromeCoral
+    static let windowMinimize    = chromeRose
+    static let windowExpand      = chromeMint
 
     // MARK: Legacy names
     // Older views (Docs, Markdown, API key field) still use these. They now
@@ -116,7 +135,7 @@ enum QM {
     static let accentCyan    = textAccentTeal
     static let accentMagenta = actionPrimary
     static let accentRed     = textAccentCoral
-    static let accentAmber   = Color.adaptive(light: "A06800", dark: "F2A900")
+    static let accentAmber   = textAccentCoral
     static let border        = borderDefault
     static let borderTeal    = borderAccentTeal
     static let borderHot     = borderAccentCoral
@@ -136,14 +155,17 @@ enum QM {
         static let s20: CGFloat = 20
     }
     enum Radius {
-        static let sm: CGFloat = 2
-        static let md: CGFloat = 4
-        static let window: CGFloat = 5
-        /// Top corners of the primary tabs (Figma menu 436:694).
-        static let tab: CGFloat = 5
+        static let sm: CGFloat = 6
+        static let md: CGFloat = 6
+        static let window: CGFloat = 8
+        /// Top corners of the primary tabs.
+        static let tab: CGFloat = 6
     }
-    /// stroke/default. 0.5pt draws one device pixel on Retina screens.
-    static let stroke: CGFloat = 0.5
+    /// stroke/default. Every drawn object carries a 2pt ink outline; the
+    /// outline does the separating, which is what lets the fills stay muted.
+    static let stroke: CGFloat = 2
+    /// Rules and dividers. They separate without enclosing, so they stay quiet.
+    static let hairline: CGFloat = 1
 
     // MARK: Typography (Figma text styles)
 
@@ -153,6 +175,9 @@ enum QM {
     private static let spaceMono = "SpaceMono-Regular"
     private static let geistRegular = "GeistMono-Regular"
     private static let geistBold    = "GeistMono-Bold"
+    /// Manrope ships as a single variable font, so the weight is applied at the
+    /// Font level rather than by picking a named file.
+    private static let manrope      = "Manrope"
 
     /// Label/Section: JetBrains Mono Bold 14, tracking 1
     static let labelSection   = Font.custom(jbBold, size: 14, relativeTo: .subheadline)
@@ -162,10 +187,17 @@ enum QM {
     static let bodyPrompt     = Font.custom(jbRegular, size: 14, relativeTo: .subheadline)
     /// Label/Control: Space Mono Regular 12
     static let labelControl   = Font.custom(spaceMono, size: 12, relativeTo: .caption)
-    /// Heading/Screen: JetBrains Mono Regular 18
-    static let headingScreen  = Font.custom(jbRegular, size: 18, relativeTo: .title3)
-    /// Heading/Reference: JetBrains Mono Bold 20
-    static let headingReference = Font.custom(jbBold, size: 20, relativeTo: .title3)
+    /// Heading/Screen: Manrope Medium 18
+    static let headingScreen  = Font.custom(manrope, size: 18, relativeTo: .title3).weight(.medium)
+    /// Heading/Reference: Manrope SemiBold 20
+    static let headingReference = Font.custom(manrope, size: 20, relativeTo: .title3).weight(.semibold)
+    /// Page header title at the default size. Manrope, like the other headings,
+    /// so it no longer shares labelSection with the wordmark and the tabs.
+    static let headingTitle   = Font.custom(manrope, size: 14, relativeTo: .subheadline).weight(.semibold)
+    /// Page heading band title. Figma Workstation/Display.
+    static let headingDisplay = Font.custom(manrope, size: 28, relativeTo: .title).weight(.semibold)
+    /// Folder and saved-item names.
+    static let folderName     = Font.custom(manrope, size: 14, relativeTo: .subheadline).weight(.medium)
     /// Body/Reference: JetBrains Mono Regular 16
     static let bodyReference  = Font.custom(jbRegular, size: 16, relativeTo: .callout)
 
@@ -174,7 +206,7 @@ enum QM {
 
     /// Registers the bundled fonts. Call once at launch, before any view draws.
     static func registerFonts() {
-        for name in [jbRegular, jbMedium, jbBold, spaceMono, geistRegular, geistBold] {
+        for name in [jbRegular, jbMedium, jbBold, spaceMono, geistRegular, geistBold, manrope] {
             guard let url = Bundle.main.url(forResource: name, withExtension: "ttf") else { continue }
             CTFontManagerRegisterFontsForURL(url as CFURL, .process, nil)
         }
@@ -221,9 +253,9 @@ extension View {
 struct FieldLabel: View {
     let text: String
     var body: some View {
-        Text(text.uppercased())
+        // Sentence case, no tracking: the Workstation frames stopped shouting.
+        Text(text)
             .font(QM.labelSection)
-            .tracking(1)
             .foregroundColor(QM.textPrimary)
     }
 }

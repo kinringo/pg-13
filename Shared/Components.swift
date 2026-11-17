@@ -13,11 +13,14 @@ import SwiftUI
 /// iOS has no window controls, so the bar carries only the PG-13 mark.
 struct WindowHeader: View {
     var body: some View {
-        HStack {
-            Spacer()
+        HStack(spacing: QM.Space.s12) {
             Text("PG-13")
                 .font(QM.labelSection)
-                .foregroundColor(QM.iconDefault)
+                .foregroundColor(QM.textOnAction)
+            Spacer(minLength: 0)
+            Text("PERSONAL SAVE FILE")
+                .font(QM.labelControl)
+                .foregroundColor(QM.textOnAction)
         }
 #if os(macOS)
         .padding(.leading, WindowHeader.trafficLightsWidth)
@@ -49,6 +52,31 @@ enum AppTab: Int, CaseIterable, Identifiable {
     /// what used to be the separate History and Folders tabs.
     case prompt = 0, skill, saved, profile
     var id: Int { rawValue }
+    /// Page heading band copy, one set per tab (Figma "Page heading").
+    var identifier: String {
+        switch self {
+        case .prompt:  return "01 / PROMPT STUDIO"
+        case .skill:   return "02 / SKILL STUDIO"
+        case .saved:   return "03 / SAVED LIBRARY"
+        case .profile: return "04 / PROFILE"
+        }
+    }
+    var heading: String {
+        switch self {
+        case .prompt:  return "A better starting point."
+        case .skill:   return "Teach it once."
+        case .saved:   return "Saved"
+        case .profile: return "Your corner of PG-13."
+        }
+    }
+    var headingDescription: String {
+        switch self {
+        case .prompt:  return "Give your idea a clear role, goal and direction."
+        case .skill:   return "Skills are reusable instructions you can apply to any prompt."
+        case .saved:   return "Your prompts and skills, in one place."
+        case .profile: return "Manage your details and sign-in security."
+        }
+    }
     var title: String {
         switch self {
         case .prompt:  return "PROMPT"
@@ -90,7 +118,7 @@ struct PrimaryTabs: View {
         .padding(.horizontal, sidePadding)
         .padding(.top, QM.Space.s4)
         .background(alignment: .bottom) {
-            Rectangle().fill(QM.annotationRecovery).frame(height: QM.stroke)
+            Rectangle().fill(QM.borderInk).frame(height: QM.stroke)
         }
     }
 
@@ -99,17 +127,16 @@ struct PrimaryTabs: View {
             Text(tab.title)
                 .font(isActive ? QM.labelSection : QM.labelControl)
                 .tracking(isActive ? 1 : 0)
-                .foregroundColor(isActive ? QM.textControl : QM.textSecondary)
+                .foregroundColor(QM.textPrimary)
                 .lineLimit(1)
                 .fixedSize()
                 .padding(.horizontal, isActive ? QM.Space.s4 : 3)
                 .frame(width: fixedWidths ? (isActive ? 90 : 80) : nil,
                        height: isActive ? 25 : 22)
                 .background(TabShape(radius: QM.Radius.tab)
-                    .fill(isActive ? QM.screen : QM.canvas))
+                    .fill(isActive ? QM.chromeRose : QM.screen))
                 .overlay(TabShape(radius: QM.Radius.tab, openBottom: isActive)
-                    .strokeBorder(isActive ? QM.annotationRecovery : QM.borderHeader,
-                                  lineWidth: QM.stroke))
+                    .strokeBorder(QM.borderInk, lineWidth: QM.stroke))
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -212,7 +239,7 @@ struct FieldInput: View {
     }
 
     private var placeholderText: Text {
-        Text(placeholder).font(QM.bodyPrompt).foregroundColor(QM.textAccentCoral)
+        Text(placeholder).font(QM.bodyPrompt).foregroundColor(QM.textSecondary)
     }
 }
 
@@ -388,7 +415,7 @@ struct SmallButton: View {
     var body: some View {
         Button(action: action) {
             ZStack {
-                Text(label.uppercased())
+                Text(label)
                     .font(font)
                     .foregroundColor(textColor)
                     .lineLimit(1)
@@ -423,41 +450,51 @@ struct LargeButton: View {
     /// 40 on Profile, 32 when it shares a row with Button/Small (GENERATE).
     var height: CGFloat = 40
     var isLoading: Bool = false
+    /// false draws the Figma disabled state and blocks the tap.
+    var isEnabled: Bool = true
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            ZStack {
-                Text(label.uppercased())
+            HStack(spacing: QM.Space.s8) {
+                if isLoading {
+                    // The system spinner follows the color scheme, not tint, on macOS.
+                    ProgressView().controlSize(.small)
+                        .environment(\.colorScheme, .light)
+                }
+                // The label stays visible while loading: it is what says what
+                // is happening, and the spinner only says that something is.
+                Text(label)
                     .font(QM.navTab)
                     .lineLimit(1)
-                    .opacity(isLoading ? 0 : 1)
-                if isLoading {
-                    // The system spinner follows the color scheme, not tint, on macOS:
-                    // a dark scheme draws it light enough to read on the plum fill.
-                    ProgressView().controlSize(.small)
-                        .environment(\.colorScheme, style == .primary ? .dark : .light)
-                }
             }
             .frame(maxWidth: .infinity, minHeight: height, maxHeight: height)
             .contentShape(Rectangle())
         }
-        .buttonStyle(LargeButtonStyle(style: style))
-        .disabled(isLoading)
+        .buttonStyle(LargeButtonStyle(style: style, isEnabled: isEnabled))
+        .disabled(isLoading || !isEnabled)
     }
 }
 
 private struct LargeButtonStyle: ButtonStyle {
     let style: LargeButton.Style
+    var isEnabled: Bool = true
 
     func makeBody(configuration: Configuration) -> some View {
         let filled = (style == .primary) != configuration.isPressed
-        return configuration.label
+        // Disabled recedes into the page: it keeps its outline and loses its fill.
+        guard isEnabled else {
+            return AnyView(configuration.label
+                .foregroundColor(QM.textDisabled)
+                .tint(QM.textDisabled)
+                .qmBox(fill: QM.screen, stroke: QM.borderInk, radius: QM.Radius.sm))
+        }
+        return AnyView(configuration.label
             .foregroundColor(filled ? QM.textOnAction : QM.textSecondary)
             .tint(filled ? QM.textOnAction : QM.textSecondary)
             .qmBox(fill: filled ? QM.buttonPrimary : QM.badge,
-                   stroke: filled ? QM.buttonPrimary : QM.borderActionSecondary,
-                   radius: QM.Radius.sm)
+                   stroke: filled ? QM.buttonPrimary : QM.borderInk,
+                   radius: QM.Radius.sm))
     }
 }
 
@@ -649,7 +686,7 @@ struct DropdownControl: View {
                             .background(selection == option || hoveredOption == option
                                         ? QM.selected : Color.clear)
                             .overlay(alignment: .bottom) {
-                                Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
+                                Rectangle().fill(QM.borderDivider).frame(height: QM.hairline)
                             }
                             .contentShape(Rectangle())
                         }
@@ -687,7 +724,7 @@ struct FolderRow: View {
                         .font(.system(size: 17))
                         .foregroundColor(QM.iconDefault)
                     Text(name.uppercased())
-                        .font(QM.labelSection)
+                        .font(QM.folderName)
                         .tracking(1)
                         .foregroundColor(QM.textPrimary)
                         .lineLimit(1)
@@ -730,7 +767,7 @@ struct SavedItemHeader: View {
         VStack(alignment: .leading, spacing: QM.Space.s8) {
             HStack(alignment: .center, spacing: QM.Space.s16) {
                 Text(title.uppercased())
-                    .font(QM.labelSection)
+                    .font(QM.folderName)
                     .tracking(1)
                     .foregroundColor(QM.textPrimary)
                     .lineLimit(2)
@@ -773,7 +810,7 @@ struct EmptyState: View {
                 .accessibilityHidden(true)
             VStack(spacing: QM.Space.s8) {
                 Text(title.uppercased())
-                    .font(QM.labelSection)
+                    .font(QM.folderName)
                     .tracking(1)
                     .foregroundColor(QM.textPrimary)
                 Text(message)
@@ -912,7 +949,7 @@ struct PageHeader: View {
     var body: some View {
         VStack(spacing: QM.Space.s4) {
             Text(title)
-                .font(size == .large ? QM.headingReference : QM.labelSection)
+                .font(size == .large ? QM.headingReference : QM.headingTitle)
                 .foregroundColor(QM.textAction)
             Text(subtitle)
                 .font(size == .large ? QM.bodyPrompt : QM.labelControl)
@@ -952,7 +989,57 @@ struct TextLink: View {
 /// Layout/Divider: a hairline with 10 above and below.
 struct SectionDivider: View {
     var body: some View {
-        Rectangle().fill(QM.borderDivider).frame(height: QM.stroke)
+        Rectangle().fill(QM.borderDivider).frame(height: QM.hairline)
             .padding(.vertical, QM.Space.s10)
+    }
+}
+
+
+// MARK: - Page heading band (Figma "Page heading")
+
+/// Pinned under the tabs, above the scrolling body: section identifier, title,
+/// description, left aligned. Replaces the centred PageHeader card.
+struct ScreenHeading: View {
+    let tab: AppTab
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: QM.Space.s8) {
+            Text(tab.identifier)
+                .font(QM.labelControl)
+                .tracking(1)
+                .foregroundColor(QM.textAction)
+            Text(tab.heading)
+                .font(QM.headingDisplay)
+                .foregroundColor(QM.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text(tab.headingDescription)
+                .font(QM.bodyReference)
+                .foregroundColor(QM.textSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, QM.Space.s20)
+        .padding(.top, QM.Space.s16)
+        .padding(.bottom, QM.Space.s12)
+    }
+}
+
+// MARK: - System footer (Figma "System footer")
+
+struct ScreenFooter: View {
+    var body: some View {
+        HStack(spacing: QM.Space.s8) {
+            Text("PG-13 / PROMPTS + SKILLS")
+                .font(QM.labelControl)
+                .foregroundColor(QM.textSecondary)
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, QM.Space.s16)
+        .padding(.vertical, QM.Space.s12)
+        .frame(maxWidth: .infinity)
+        .background(QM.field)
+        .overlay(alignment: .top) {
+            Rectangle().fill(QM.borderInk).frame(height: QM.stroke)
+        }
     }
 }

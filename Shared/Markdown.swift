@@ -735,7 +735,7 @@ struct DocsView: View {
 
     @ViewBuilder private var controls: some View {
         HStack(spacing: 10) {
-            QMButton(label: vm.isGenerating ? "Writing..." : "Write Document",
+            QMButton(label: vm.isGenerating ? "Writing…" : "Write Document",
                      style: .primary, height: 30,
                      isLoading: vm.isGenerating, flexible: true) { vm.generate() }
             QMButton(label: "Clear All", height: 30) { vm.clear() }
